@@ -1,0 +1,18 @@
+{
+  "name": "facebook-page-automation",
+  "version": "1.0.0",
+  "description": "Facebook page automation tool with scheduled posting and manual group share link generation",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node index.js"
+  },
+  "keywords": ["facebook", "automation", "express", "api"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.6.2",
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1"
+  }
+}
