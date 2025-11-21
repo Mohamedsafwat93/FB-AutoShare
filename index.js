@@ -540,10 +540,10 @@ app.post('/api/facebook/groups-verify', async (req, res) => {
   }
 });
 
-// Facebook Post to Page with Media Support
+// Facebook Post to Page with Media Support (Using PAGE TOKEN for PUBLIC posts)
 app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {name: 'video', maxCount: 1}]), async (req, res) => {
   try {
-    const { message, link } = req.body;
+    const { message, link, page_id } = req.body;
     const photoFile = req.files?.photo?.[0];
     const videoFile = req.files?.video?.[0];
     
@@ -557,7 +557,130 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       return res.status(400).json({error:'Message cannot be empty'});
     }
 
-    // Use user token to get page and post
+    // Method 1: Use PAGE TOKEN (Primary - posts as the page publicly)
+    if(pageToken) {
+      try {
+        console.log('🔑 Using PAGE TOKEN for public posting...');
+        
+        // Get page ID - either from request or use user ID as page ID
+        let targetPageId = page_id || process.env.FB_USER_ID;
+        
+        if(!targetPageId) {
+          // Try to fetch from user's pages using user token
+          if(userToken) {
+            console.log('🔍 Fetching page ID from user pages...');
+            const pagesResponse = await axios.get(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userToken}`);
+            if(pagesResponse.data.data && pagesResponse.data.data.length > 0) {
+              targetPageId = pagesResponse.data.data[0].id;
+              console.log(`✅ Found page ID: ${targetPageId}`);
+            }
+          }
+        }
+        
+        if(!targetPageId) {
+          return res.status(400).json({error:'Page ID required or not found'});
+        }
+        
+        // Build post data with PAGE TOKEN
+        const postData = {
+          message: message,
+          access_token: pageToken,
+          privacy: JSON.stringify({"value": "EVERYONE"})
+        };
+        
+        // If photo exists, upload via photos endpoint first
+        if(photoFile) {
+          console.log(`📸 Photo detected: ${photoFile.filename}`);
+          const photoPath = path.join(uploadDir, photoFile.filename);
+          
+          // Validate image
+          const validation = await validateImage(photoPath);
+          if(!validation.valid) {
+            console.warn(`⚠️ Image validation: ${validation.error}`);
+          } else {
+            console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
+          }
+          
+          // Optimize image for Facebook
+          await optimizeImage(photoPath, 1200, 1200, 80);
+          
+          // Read file as buffer
+          const photoBuffer = fs.readFileSync(photoPath);
+          
+          // Step 1: Upload photo to page's /photos endpoint with PAGE TOKEN
+          const photoFormData = new FormData();
+          photoFormData.append('source', photoBuffer, {
+            filename: photoFile.filename,
+            contentType: photoFile.mimetype
+          });
+          photoFormData.append('access_token', pageToken);
+          
+          console.log(`📤 Uploading photo to page ${targetPageId}/photos (Using PAGE TOKEN - will be PUBLIC)`);
+          const photoResponse = await axios.post(
+            `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
+            photoFormData,
+            { headers: photoFormData.getHeaders() }
+          );
+          
+          console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
+          
+          // Step 2: Create feed post with the uploaded photo (PUBLIC)
+          const feedPostData = {
+            message: postData.message,
+            object_attachment: photoResponse.data.id,
+            access_token: pageToken,
+            privacy: '{"value":"EVERYONE"}'
+          };
+          
+          if(link) {
+            feedPostData.link = link;
+          }
+          
+          console.log(`📤 Creating PUBLIC feed post on ${targetPageId}/feed with photo (Posted BY page - visible to EVERYONE)`);
+          const feedResponse = await axios.post(
+            `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+            feedPostData
+          );
+          
+          console.log('✅ PUBLIC post successful:', feedResponse.data.id);
+          
+          return res.json({
+            success: true,
+            message: `✅ Post published PUBLICLY on the page! (Posted BY IT-Solutions Page - Visible to EVERYONE)`,
+            postId: feedResponse.data.id,
+            visibility: 'PUBLIC',
+            posted_by: 'IT-Solutions Page'
+          });
+        }
+        
+        // Text-only post (no image)
+        if(link) {
+          postData.link = link;
+        }
+        
+        console.log(`📤 Creating PUBLIC text post on ${targetPageId}/feed (Posted BY page - visible to EVERYONE)`);
+        const response = await axios.post(
+          `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+          postData
+        );
+        
+        console.log('✅ PUBLIC post successful:', response.data.id);
+        
+        return res.json({
+          success: true,
+          message: `✅ Post published PUBLICLY on the page! (Posted BY IT-Solutions Page - Visible to EVERYONE)`,
+          postId: response.data.id,
+          visibility: 'PUBLIC',
+          posted_by: 'IT-Solutions Page'
+        });
+      } catch(err) {
+        console.error('❌ Error with page token:', err.response?.data?.error?.message || err.message);
+        console.log('⚠️ Falling back to user token method...');
+        // Fall through to user token method
+      }
+    }
+
+    // Method 2: Fallback to USER TOKEN (if page token fails)
     if(userToken) {
       try {
         console.log('📤 Fetching user pages...');
@@ -570,10 +693,11 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         const page = pagesResponse.data.data[0];
         console.log(`✅ Found page: ${page.name}`);
         
-        // Build post data
+        // Build post data with page's access token from me/accounts
         const postData = {
           message: message,
-          access_token: page.access_token
+          access_token: page.access_token,
+          privacy: JSON.stringify({"value": "EVERYONE"})
         };
         
         // If photo exists, upload via photos endpoint first
@@ -616,8 +740,8 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
           const feedPostData = {
             message: postData.message,
             object_attachment: photoResponse.data.id,
-            privacy: {"value": "EVERYONE"},
-            access_token: page.access_token
+            access_token: page.access_token,
+            privacy: '{"value":"EVERYONE"}'
           };
           
           if(link) {
@@ -644,8 +768,6 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
           postData.link = link;
         }
         
-        postData.privacy = {"value": "EVERYONE"};
-        
         console.log(`📤 Creating text post on ${page.id}/feed (PUBLIC)`);
         const response = await axios.post(
           `https://graph.facebook.com/v18.0/${page.id}/feed`,
@@ -668,7 +790,7 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       }
     }
     
-    return res.status(400).json({error:'No valid Facebook token configured. Check your FB_USER_TOKEN environment variable.'});
+    return res.status(400).json({error:'No valid Facebook token configured. Check your FB_PAGE_TOKEN or FB_USER_TOKEN environment variables.'});
     
   } catch(err) {
     console.error('❌ Unexpected error:', err.message);
