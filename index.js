@@ -67,7 +67,7 @@ const upload = multer({
 // Facebook API Configuration
 const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN;
 const FB_USER_TOKEN = process.env.FB_USER_TOKEN;
-const FB_USER_ID = process.env.FB_USER_ID;
+const FB_PAGE_ID = '133112064223614'; // IT-Solutions page ID (fixed)
 
 // Disable caching for all responses
 app.use((req, res, next) => {
@@ -562,24 +562,10 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       try {
         console.log('🔑 Using PAGE TOKEN for public posting...');
         
-        // Get page ID - either from request or use user ID as page ID
-        let targetPageId = page_id || process.env.FB_USER_ID;
+        // Use the fixed IT-Solutions page ID or from request
+        const targetPageId = page_id || FB_PAGE_ID;
         
-        if(!targetPageId) {
-          // Try to fetch from user's pages using user token
-          if(userToken) {
-            console.log('🔍 Fetching page ID from user pages...');
-            const pagesResponse = await axios.get(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userToken}`);
-            if(pagesResponse.data.data && pagesResponse.data.data.length > 0) {
-              targetPageId = pagesResponse.data.data[0].id;
-              console.log(`✅ Found page ID: ${targetPageId}`);
-            }
-          }
-        }
-        
-        if(!targetPageId) {
-          return res.status(400).json({error:'Page ID required or not found'});
-        }
+        console.log(`✅ Using Page ID: ${targetPageId}`);
         
         // Build post data with PAGE TOKEN
         const postData = {
