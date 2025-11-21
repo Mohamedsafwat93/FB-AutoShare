@@ -12,8 +12,23 @@ const crypto = require('crypto');
 const { google } = require('googleapis');
 const { optimizeImage, validateImage } = require('./media-optimizer');
 const { initializeGoogleDrive, uploadToGoogleDrive, getStorageQuota, deleteAllFilesInFolder, uploadAllFilesFromFolder } = require('./google-drive');
-const { sendNotification, sendTestNotification } = require('./notification-system');
 require('dotenv').config();
+
+// Telegram Bot & Email Setup
+const TelegramBot = require('node-telegram-bot-api');
+const nodemailer = require('nodemailer');
+
+const telegramBot = process.env.TELEGRAM_BOT_TOKEN 
+  ? new TelegramBot(process.env.TELEGRAM_BOT_TOKEN, { polling: false })
+  : null;
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  }
+});
 
 // Start Health Check + Keep-Alive + Cleanup System
 require('./health-check');
@@ -1195,19 +1210,35 @@ app.post('/api/sync-monthly-storage', async (req, res) => {
 
 // Notification System Test Endpoint
 app.post('/api/test-notification', async (req, res) => {
-  try {
-    await sendTestNotification();
-    res.json({ 
-      success: true, 
-      message: '✅ تم الإرسال لـ Telegram + Gmail!' 
-    });
-  } catch (error) {
-    console.error('❌ Notification error:', error.message);
-    res.status(500).json({ 
-      success: false, 
-      error: error.message 
-    });
+  console.log('Test notification button pressed!');
+
+  // تليجرام
+  if (telegramBot) {
+    try {
+      await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, '🧪 اختبار ناجح من السيرفر!');
+      console.log('✅ Telegram OK');
+    } catch (e) {
+      console.log('❌ Telegram Error:', e.message);
+    }
+  } else {
+    console.log('⚠️  Telegram bot not initialized');
   }
+
+  // إيميل
+  try {
+    await transporter.verify();
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: process.env.EMAIL_USER,
+      subject: 'Test from Server',
+      text: 'لو وصلك الإيميل ده يبقى الإيميل شغال!'
+    });
+    console.log('✅ Email OK');
+  } catch (e) {
+    console.log('❌ Email Error:', e.message);
+  }
+
+  res.json({ message: '✅ تم الاختبار! افتح الـ Console عشان تشوف النتائج 📱📧' });
 });
 
 // Now serve static files (after API routes)
