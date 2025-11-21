@@ -23,8 +23,18 @@
     th { background: #00aaff; color: #000; font-weight: 600; }
     button { width: 200px; height: 45px; background: #ff004c; border: none; color: white; border-radius: 10px; font-size: 17px; cursor: pointer; transition: 0.3s; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
     button:hover { background: #ff336d; transform: scale(1.05); }
-    .github-btn { background: linear-gradient(135deg, #00d0ff, #00ffd5); color: #000; padding: 12px 30px; border-radius: 25px; text-decoration: none; font-weight: 600; display: inline-block; margin: 20px 0; transition: 0.3s ease; box-shadow: 0 4px 15px rgba(0, 208, 255, 0.4); }
-    .github-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 208, 255, 0.6); }
+    .social-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 30px 0; }
+    .social-btn { padding: 12px 25px; border-radius: 25px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); border: none; cursor: pointer; font-size: 14px; }
+    .github-btn { background: linear-gradient(135deg, #333, #555); color: #fff; }
+    .github-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(100, 100, 100, 0.6); }
+    .facebook-btn { background: linear-gradient(135deg, #1877f2, #0a66c2); color: #fff; }
+    .facebook-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(24, 119, 242, 0.6); }
+    .youtube-btn { background: linear-gradient(135deg, #ff0000, #cc0000); color: #fff; }
+    .youtube-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(255, 0, 0, 0.6); }
+    .tiktok-btn { background: linear-gradient(135deg, #000000, #25f4ee); color: #fff; }
+    .tiktok-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8); }
+    .instagram-btn { background: linear-gradient(135deg, #fd1d1d, #833ab4); color: #fff; }
+    .instagram-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(253, 29, 29, 0.6); }
     footer { text-align: center; margin: 40px 0 20px 0; }
     @media (max-width: 768px) { #container { grid-template-columns: 1fr; } #services { grid-column: span 1; } .stats { grid-template-columns: 1fr; } }
 </style>
@@ -104,9 +114,25 @@
 </div>
 
 <footer>
-    <a href="https://github.com/Mohamedsafwat93" target="_blank" class="github-btn">
-        🚀 Visit My GitHub Profile
-    </a>
+    <h3 style="color: #00ffd5; margin-bottom: 15px;">Connect With Me</h3>
+    <div class="social-container">
+        <a href="https://kutt.it/SolutionsFB" target="_blank" class="social-btn facebook-btn">
+            👍 Facebook
+        </a>
+        <a href="https://kutt.it/SolutionsYT" target="_blank" class="social-btn youtube-btn">
+            ▶️ YouTube
+        </a>
+        <a href="https://kutt.it/SolutionsTT" target="_blank" class="social-btn tiktok-btn">
+            🎵 TikTok
+        </a>
+        <a href="https://kutt.it/SolutionsIG" target="_blank" class="social-btn instagram-btn">
+            📸 Instagram
+        </a>
+        <a href="https://github.com/Mohamedsafwat93" target="_blank" class="social-btn github-btn">
+            🚀 GitHub
+        </a>
+    </div>
+    <p style="color: #888; font-size: 14px; margin-top: 20px;">Made With Love ❤️ By Eng. Muhammed Safwat</p>
 </footer>
 
 <script>
