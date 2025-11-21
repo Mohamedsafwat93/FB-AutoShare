@@ -45,6 +45,10 @@
     <h3>💿 Hard Disk</h3>
     <p id="disk-info">Loading...</p>
   </div>
+  <div class="stat-card">
+    <h3>🌐 Network</h3>
+    <p id="network-info">Loading...</p>
+  </div>
 </div>
 
 <div id="container">
@@ -223,8 +227,28 @@ async function updateQuickStats() {
   }
 }
 
+// Network Stats Update
+async function updateNetworkStats() {
+  try {
+    const res = await fetch("/api/stats?t=" + Date.now());
+    const data = await res.json();
+    
+    const net = data.network || { rx_sec: 0, tx_sec: 0 };
+    const download = (net.rx_sec / 1024 / 1024).toFixed(2); // Convert to MB/s
+    const upload = (net.tx_sec / 1024 / 1024).toFixed(2);   // Convert to MB/s
+    const speed = (Math.max(parseFloat(download), parseFloat(upload))).toFixed(2);
+    
+    document.getElementById('network-info').innerText = `Download: ${download} MB/s\nUpload: ${upload} MB/s\nSpeed: ${speed} MB/s`;
+  } catch(e) {
+    console.error('Network stats error:', e);
+  }
+}
+
 setInterval(updateQuickStats, 1000);
 updateQuickStats();
+
+setInterval(updateNetworkStats, 1000);
+updateNetworkStats();
 </script>
 
 </body>
