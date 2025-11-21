@@ -2,6 +2,9 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+<meta http-equiv="Pragma" content="no-cache" />
+<meta http-equiv="Expires" content="0" />
 <title>Facebook Automation Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
@@ -61,7 +64,8 @@ let ramChart,diskChart,networkChart;
 
 async function fetchStats(){
   try{
-    const res = await fetch('/api/stats');
+    const res = await fetch('/api/stats?t='+Date.now());
+    if(!res.ok) throw new Error('API error: '+res.status);
     const data = await res.json();
     document.getElementById('uptime').textContent = data.uptime.toFixed(2);
     document.getElementById('platform').textContent = data.platform;
@@ -87,12 +91,13 @@ async function fetchStats(){
       networkChart = new Chart(document.getElementById('networkChart'), {type:'line', data:{labels:['RX','TX'],datasets:[{label:'KB/s',data:[networkRx,networkTx],backgroundColor:['#2196f3','#ff9800']}] }});
     } else { networkChart.data.datasets[0].data=[networkRx,networkTx]; networkChart.update(); }
 
-  }catch(e){ console.error(e);}
+  }catch(e){ console.error('fetchStats error:', e);}
 }
 
 async function fetchServices(){
   try{
-    const res = await fetch('/api/services');
+    const res = await fetch('/api/services?t='+Date.now());
+    if(!res.ok) throw new Error('Services API error');
     const services = await res.json();
     const tbody = document.getElementById('servicesTable');
     tbody.innerHTML='';
@@ -101,7 +106,7 @@ async function fetchServices(){
       tr.innerHTML=`<td>${s.proto}</td><td>${s.localAddress}</td><td>${s.state}</td><td>${s.pid_program}</td>`;
       tbody.appendChild(tr);
     });
-  }catch(e){console.error(e);}
+  }catch(e){console.error('fetchServices error:', e);}
 }
 
 async function restartServer(){
