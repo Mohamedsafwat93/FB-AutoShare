@@ -65,9 +65,10 @@ const upload = multer({
 });
 
 // Facebook API Configuration
-const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN;
-const FB_USER_TOKEN = process.env.FB_USER_TOKEN;
-const FB_PAGE_ID = '133112064223614'; // IT-Solutions page ID (fixed)
+const FB_USER_TOKEN = process.env.FB_USER_TOKEN; // User token to fetch page token dynamically
+let FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN; // Fallback/cached page token
+let FB_PAGE_ID = '133112064223614'; // Default page ID
+let pageTokenCache = null; // Cache page token info
 
 // Disable caching for all responses
 app.use((req, res, next) => {
@@ -543,22 +544,64 @@ app.post('/api/facebook/groups-verify', async (req, res) => {
 // Deduplication cache for posts (prevent double posting)
 const postCache = new Map();
 
-// Facebook Post to Page - PAGE TOKEN ONLY with Deduplication
+// Function to get Page Access Token dynamically from User Token
+async function getPageAccessToken() {
+  try {
+    if(pageTokenCache) {
+      console.log('📦 Using cached page token');
+      return pageTokenCache;
+    }
+
+    if(!FB_USER_TOKEN) {
+      throw new Error('FB_USER_TOKEN not configured');
+    }
+
+    console.log('🔍 Fetching page info from user token...');
+    const response = await axios.get(
+      `https://graph.facebook.com/v19.0/me/accounts?access_token=${FB_USER_TOKEN}`
+    );
+
+    if(!response.data.data || response.data.data.length === 0) {
+      throw new Error('No pages found in user account');
+    }
+
+    console.log('📄 Available pages:', response.data.data.map(p => `${p.name} (${p.id})`).join(', '));
+
+    // Find IT-Solutions page
+    const itSolutionsPage = response.data.data.find(page => 
+      page.name.toLowerCase().includes('it') || 
+      page.name.toLowerCase().includes('solution') ||
+      page.id === '133112064223614'
+    );
+
+    if(!itSolutionsPage) {
+      throw new Error('IT-Solutions page not found in user accounts. Available: ' + 
+        response.data.data.map(p => p.name).join(', '));
+    }
+
+    console.log(`✅ Found page: ${itSolutionsPage.name} (${itSolutionsPage.id})`);
+
+    pageTokenCache = {
+      pageToken: itSolutionsPage.access_token,
+      pageId: itSolutionsPage.id,
+      pageName: itSolutionsPage.name
+    };
+
+    return pageTokenCache;
+  } catch(err) {
+    console.error('❌ Failed to get page token:', err.message);
+    throw err;
+  }
+}
+
+// Facebook Post to Page - Dynamic Page Token with Deduplication
 app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {name: 'video', maxCount: 1}]), async (req, res) => {
   try {
     const { message, link, post_hash } = req.body;
     const photoFile = req.files?.photo?.[0];
     
-    // Use PAGE TOKEN ONLY - No fallback to prevent double posting
-    const pageToken = process.env.FB_PAGE_TOKEN;
-    const targetPageId = FB_PAGE_ID; // 133112064223614 (IT-Solutions)
-    
     if(!message) {
       return res.status(400).json({error:'Message cannot be empty'});
-    }
-
-    if(!pageToken) {
-      return res.status(400).json({error:'FB_PAGE_TOKEN not configured'});
     }
 
     // Check for duplicate posts using hash
@@ -570,25 +613,28 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       });
     }
 
-    console.log(`🔑 PAGE TOKEN Method - Posting as IT-Solutions (${targetPageId})`);
+    // Get page token dynamically
+    const { pageToken, pageId, pageName } = await getPageAccessToken();
 
-    // PHOTO POST - Two steps: upload to /photos, then post to /feed with object_attachment
+    console.log(`🔑 Posting to ${pageName} (${pageId}) using Page Token`);
+
+    // PHOTO POST
     if(photoFile) {
       console.log(`📸 Photo detected: ${photoFile.filename}`);
       const photoPath = path.join(uploadDir, photoFile.filename);
       
-      // Validate & optimize image
+      // Validate & optimize
       const validation = await validateImage(photoPath);
       if(!validation.valid) {
         console.warn(`⚠️ Image validation: ${validation.error}`);
       } else {
-        console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
+        console.log(`✅ Image valid: ${validation.format}`);
       }
       
       await optimizeImage(photoPath, 1200, 1200, 80);
       const photoBuffer = fs.readFileSync(photoPath);
       
-      // STEP 1: Upload photo to /photos endpoint
+      // Upload to /photos
       const photoFormData = new FormData();
       photoFormData.append('source', photoBuffer, {
         filename: photoFile.filename,
@@ -596,21 +642,16 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       });
       photoFormData.append('access_token', pageToken);
       
-      console.log(`📤 STEP 1: Uploading photo to ${targetPageId}/photos (PAGE TOKEN)`);
-      let photoResponse;
-      try {
-        photoResponse = await axios.post(
-          `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
-          photoFormData,
-          { headers: photoFormData.getHeaders() }
-        );
-        console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
-      } catch(photoErr) {
-        console.error('❌ Photo upload failed:', photoErr.response?.data?.error?.message || photoErr.message);
-        throw photoErr;
-      }
+      console.log(`📤 Uploading photo to ${pageId}/photos`);
+      const photoResponse = await axios.post(
+        `https://graph.facebook.com/v19.0/${pageId}/photos`,
+        photoFormData,
+        { headers: photoFormData.getHeaders() }
+      );
       
-      // STEP 2: Create ONE feed post with the uploaded photo
+      console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
+      
+      // Create feed post with photo attachment
       const feedPostData = {
         message: message,
         object_attachment: photoResponse.data.id,
@@ -621,20 +662,15 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         feedPostData.link = link;
       }
       
-      console.log(`📤 STEP 2: Creating feed post with photo (PAGE TOKEN - Posted AS IT-Solutions)`);
-      let feedResponse;
-      try {
-        feedResponse = await axios.post(
-          `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-          feedPostData
-        );
-        console.log('✅ ONE post created:', feedResponse.data.id);
-      } catch(feedErr) {
-        console.error('❌ Feed post failed:', feedErr.response?.data?.error?.message || feedErr.message);
-        throw feedErr;
-      }
+      console.log(`📤 Creating feed post with photo`);
+      const feedResponse = await axios.post(
+        `https://graph.facebook.com/v19.0/${pageId}/feed`,
+        feedPostData
+      );
       
-      // Store post hash to prevent duplicates (expires in 10 minutes)
+      console.log('✅ Post created:', feedResponse.data.id);
+      
+      // Store hash to prevent duplicates
       if(post_hash) {
         postCache.set(post_hash, true);
         setTimeout(() => postCache.delete(post_hash), 10 * 60 * 1000);
@@ -642,15 +678,15 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       
       return res.json({
         success: true,
-        message: `✅ Posted to IT-Solutions Page!`,
+        message: `✅ Posted to ${pageName}!`,
         postId: feedResponse.data.id,
-        posted_by: 'IT-Solutions Page',
+        posted_by: pageName,
         posts_count: 1
       });
     }
     
-    // TEXT-ONLY POST (No photo)
-    console.log(`📤 Text-only post (PAGE TOKEN - Posted AS IT-Solutions)`);
+    // TEXT-ONLY POST
+    console.log(`📤 Creating text post`);
     const textPostData = {
       message: message,
       access_token: pageToken
@@ -661,13 +697,13 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
     }
     
     const response = await axios.post(
-      `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+      `https://graph.facebook.com/v19.0/${pageId}/feed`,
       textPostData
     );
     
-    console.log('✅ Post success:', response.data.id);
+    console.log('✅ Post created:', response.data.id);
     
-    // Store post hash to prevent duplicates (expires in 10 minutes)
+    // Store hash to prevent duplicates
     if(post_hash) {
       postCache.set(post_hash, true);
       setTimeout(() => postCache.delete(post_hash), 10 * 60 * 1000);
@@ -675,16 +711,15 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
     
     return res.json({
       success: true,
-      message: `✅ Posted to IT-Solutions Page!`,
+      message: `✅ Posted to ${pageName}!`,
       postId: response.data.id,
-      posted_by: 'IT-Solutions Page'
+      posted_by: pageName
     });
     
   } catch(err) {
     console.error('❌ Facebook Post Error:', err.response?.data?.error?.message || err.message);
     res.status(500).json({
-      error: err.response?.data?.error?.message || err.message,
-      details: err.response?.data
+      error: err.response?.data?.error?.message || err.message
     });
   }
 });
