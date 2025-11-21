@@ -32,6 +32,8 @@ google_service.json
 credentials.json
 token.json
 oauth-token.json
+attached_assets/
+*.json.backup
 
 # Logs
 logs/
