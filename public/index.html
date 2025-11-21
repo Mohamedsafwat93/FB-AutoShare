@@ -18,7 +18,13 @@
     .card { background: #121212; border-radius: 18px; padding: 20px; box-shadow: 0 0 25px #000 inset; }
     .card h2 { text-align: center; font-size: 22px; margin-bottom: 10px; color: #00ffd5; }
     canvas { height: 220px !important; }
-    #services { grid-column: span -1; }
+    #services { grid-column: span 2; }
+    #facebook-card { grid-column: span 1; order: 999; }
+    .main-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 25px; width: 94%; margin: auto; margin-top: 35px; }
+    .services-column { grid-column: 1; }
+    .facebook-column { grid-column: 2; }
+    .facebook-card-wrapper { background: #121212; border-radius: 18px; padding: 20px; box-shadow: 0 0 25px #000 inset; animation: slideInCard 0.7s ease-out backwards; animation-delay: 0.8s; }
+    .facebook-card-wrapper h2 { text-align: center; font-size: 22px; margin-bottom: 10px; color: #00ffd5; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { padding: 16px 14px; text-align: center; background: #1b1b1b; border-bottom: 1px solid #333; font-size: 13px; }
     th { background: #00aaff; color: #000; font-weight: 600; }
@@ -331,22 +337,30 @@
         </div>
     </div>
 
-    <!-- SERVICES TABLE -->
-    <div class="card" id="services">
-        <h2>Active Services</h2>
-        <table id="servicesTable">
-            <tr>
-                <th>Proto</th>
-                <th>Local Address</th>
-                <th>State</th>
-                <th>PID/Program</th>
-            </tr>
-        </table>
     </div>
 
-    <!-- FACEBOOK MANAGEMENT SECTION -->
-    <div style="width: 94%; margin: 30px auto;">
-        <div class="facebook-section">
+    <!-- SERVICES + FACEBOOK LAYOUT -->
+    <div class="main-layout">
+        <!-- SERVICES TABLE -->
+        <div class="services-column">
+            <div class="card" id="services">
+                <h2>Active Services</h2>
+                <table id="servicesTable">
+                    <tr>
+                        <th>Proto</th>
+                        <th>Local Address</th>
+                        <th>State</th>
+                        <th>PID/Program</th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- FACEBOOK MANAGEMENT SECTION -->
+        <div class="facebook-column">
+            <div class="facebook-card-wrapper">
+            <h2>📱 Facebook</h2>
+            <div class="facebook-section">
             <h3>📱 Facebook Posting & Groups Management</h3>
             
             <!-- Token Status -->
@@ -422,8 +436,10 @@
             </div>
         </div>
     </div>
-
-</div>
+            </div>
+            </div>
+        </div>
+    </div>
 
 <footer>
     <h3 style="color: #00ffd5; margin-bottom: 15px;">Connect With Me</h3>
