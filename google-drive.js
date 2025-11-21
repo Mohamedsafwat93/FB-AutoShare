@@ -143,11 +143,84 @@ async function deleteFromGoogleDrive(fileId) {
   }
 }
 
+// Delete all files in a folder
+async function deleteAllFilesInFolder(folderId) {
+  if (!authenticated) {
+    throw new Error('Google Drive not authenticated');
+  }
+
+  try {
+    const response = await driveService.files.list({
+      q: `'${folderId}' in parents`,
+      fields: 'files(id, name)',
+      pageSize: 1000
+    });
+
+    const files = response.data.files || [];
+    
+    for (const file of files) {
+      await driveService.files.delete({ fileId: file.id });
+    }
+
+    return {
+      deletedCount: files.length,
+      files: files
+    };
+  } catch (error) {
+    throw new Error(`Error deleting files: ${error.message}`);
+  }
+}
+
+// Upload all files from a local folder
+async function uploadAllFilesFromFolder(localFolderPath, folderId) {
+  if (!authenticated) {
+    throw new Error('Google Drive not authenticated');
+  }
+
+  if (!fs.existsSync(localFolderPath)) {
+    throw new Error(`Local folder not found: ${localFolderPath}`);
+  }
+
+  try {
+    const files = fs.readdirSync(localFolderPath);
+    const results = [];
+
+    for (const fileName of files) {
+      const filePath = path.join(localFolderPath, fileName);
+      const stats = fs.statSync(filePath);
+
+      if (stats.isFile()) {
+        try {
+          const result = await uploadFileToGoogleDrive(filePath, fileName, folderId);
+          results.push({
+            file: fileName,
+            status: 'uploaded',
+            fileId: result.fileId,
+            url: result.url
+          });
+        } catch (err) {
+          results.push({
+            file: fileName,
+            status: 'failed',
+            error: err.message
+          });
+        }
+      }
+    }
+
+    return results;
+  } catch (error) {
+    throw new Error(`Error uploading files: ${error.message}`);
+  }
+}
+
 module.exports = {
   initializeGoogleDrive,
   getStorageQuota,
   uploadToGoogleDrive,
   uploadFileToGoogleDrive,
   deleteFromGoogleDrive,
+  deleteAllFilesInFolder,
+  uploadAllFilesFromFolder,
   isAuthenticated: () => authenticated
 };
