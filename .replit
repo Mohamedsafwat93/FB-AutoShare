@@ -1,4 +1,4 @@
-modules = ["nodejs-20"]
+modules = ["nodejs-20", "python-3.10"]
 [agent]
 expertMode = true
 
@@ -33,3 +33,7 @@ externalPort = 80
 [[ports]]
 localPort = 36177
 externalPort = 3000
+
+[nix]
+channel = "stable-25_05"
+packages = ["glibcLocales"]
