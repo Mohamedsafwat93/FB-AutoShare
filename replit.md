@@ -188,15 +188,21 @@ Migrates all files from `/public/temp-uploads/` to Google Drive
 
 Ready for GitHub deployment to: https://github.com/Mohamedsafwat93/FB-AutoShare
 
-## Google Drive Migration Status
+## Future File Storage Strategy
 
-**Files Pending Upload:**
-- 15 files total (images, videos, text files)
-- Location: `/public/temp-uploads/`
-- Destination folder ID: `1hByCXDjMMrYcWo5oAyqYqK_Jk603nZdL`
+**Current System:**
+- New uploads attempt Google Drive first (tries to avoid local storage)
+- If Google Drive fails (certificate issue in Replit), files fall back to local storage
+- Files stored in: `/public/temp-uploads/`
 
-**How to Migrate:**
-1. Download `migrate-to-drive.js` and `google_service.json`
+**Storage Flow:**
+```
+User uploads file → Try Google Drive → Fail (certificate issue) → Store locally
+```
+
+**Migration When Ready:**
+When you're ready to move files to Google Drive:
+1. Download `migrate-to-drive.js` + `google_service.json`
 2. Download all files from `/public/temp-uploads/`
 3. Run on your local machine:
 ```bash
@@ -204,12 +210,15 @@ npm install googleapis
 node migrate-to-drive.js
 ```
 
-**Note:** The Replit environment has an OpenSSL compatibility issue preventing uploads. Migration works perfectly on local machines (Windows/Mac/Linux).
+**Why This Works:**
+- ✅ Uploads work immediately (don't fail)
+- ✅ Files are safe and accessible
+- ✅ You batch-migrate to Google Drive when convenient
+- ✅ No more OpenSSL errors blocking your workflow
 
-**After Migration:**
-- ✅ All existing files on Google Drive
-- ✅ New uploads via web interface go directly to Google Drive
-- ✅ Server ready for 24/7 monitoring deployment
+**Existing Files:**
+- 15 files ready in `/public/temp-uploads/` 
+- Destination: Google Drive folder `1hByCXDjMMrYcWo5oAyqYqK_Jk603nZdL`
 
 ## Next Steps / Future Enhancements
 - Deploy to AWS/Railway/Digital Ocean with Docker
