@@ -36,3 +36,10 @@ externalPort = 3000
 [nix]
 channel = "stable-25_05"
 packages = ["glibcLocales", "nettools", "imagemagick", "ffmpeg", "jpegoptim", "pngcrush"]
+
+[userenv]
+
+[userenv.shared]
+TELEGRAM_CHAT_ID = "1127008149"
+EMAIL_USER = "mohamedcafwat@gmail.com"
+USE_GOOGLE_DRIVE = "false"
