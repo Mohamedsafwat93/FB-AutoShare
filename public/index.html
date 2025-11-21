@@ -22,8 +22,13 @@
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { padding: 12px; text-align: center; background: #1b1b1b; border-bottom: 1px solid #333; font-size: 14px; }
     th { background: #00aaff; color: #000; font-weight: 600; }
-    button { width: 200px; height: 45px; background: #ff004c; border: none; color: white; border-radius: 10px; font-size: 17px; cursor: pointer; transition: 0.3s; margin-top: 20px; display: block; margin-left: auto; margin-right: auto; }
+    button { background: #ff004c; border: none; color: white; border-radius: 8px; cursor: pointer; transition: 0.3s; display: block; margin-left: auto; margin-right: auto; }
     button:hover { background: #ff336d; transform: scale(1.05); }
+    .control-btn { width: 100%; padding: 12px 20px; border: 2px solid transparent; font-size: 13px; font-weight: 600; transition: all 0.3s ease; border-radius: 8px; background: linear-gradient(135deg, #ff1744, #d63031); color: #fff; }
+    .control-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(255, 23, 68, 0.4); border-color: #ff5252; background: linear-gradient(135deg, #ff5252, #ff1744); }
+    .control-btn:active { transform: translateY(-1px); }
+    .control-btn.cleanup { background: linear-gradient(135deg, #00ff88, #00d963); }
+    .control-btn.cleanup:hover { box-shadow: 0 10px 25px rgba(0, 255, 136, 0.4); border-color: #00ffaa; background: linear-gradient(135deg, #00ffaa, #00ff88); }
     .social-container { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; margin: 30px 0; }
     .social-btn { padding: 12px 25px; border-radius: 25px; text-decoration: none; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; transition: 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3); border: none; cursor: pointer; font-size: 14px; }
     .github-btn { background: linear-gradient(135deg, #333, #555); color: #fff; }
@@ -319,13 +324,13 @@
     <!-- DISK CLEANUP BUTTON -->
     <div class="card">
         <h2>Disk Cleanup</h2>
-        <button onclick="cleanupDisk()" style="background: #00ff62; color: #000;">Clean Disk Cache</button>
+        <button class="control-btn cleanup" onclick="cleanupDisk()">🗑️ Clean Disk Cache</button>
     </div>
 
     <!-- RESTART BUTTON -->
     <div class="card">
         <h2>Controls</h2>
-        <button onclick="restartServer()">Restart Server</button>
+        <button class="control-btn" onclick="restartServer()">🔄 Restart Server</button>
     </div>
 
     <!-- SERVICES TABLE -->
