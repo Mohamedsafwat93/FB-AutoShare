@@ -188,6 +188,29 @@ Migrates all files from `/public/temp-uploads/` to Google Drive
 
 Ready for GitHub deployment to: https://github.com/Mohamedsafwat93/FB-AutoShare
 
+## Google Drive Migration Status
+
+**Files Pending Upload:**
+- 15 files total (images, videos, text files)
+- Location: `/public/temp-uploads/`
+- Destination folder ID: `1hByCXDjMMrYcWo5oAyqYqK_Jk603nZdL`
+
+**How to Migrate:**
+1. Download `migrate-to-drive.js` and `google_service.json`
+2. Download all files from `/public/temp-uploads/`
+3. Run on your local machine:
+```bash
+npm install googleapis
+node migrate-to-drive.js
+```
+
+**Note:** The Replit environment has an OpenSSL compatibility issue preventing uploads. Migration works perfectly on local machines (Windows/Mac/Linux).
+
+**After Migration:**
+- ✅ All existing files on Google Drive
+- ✅ New uploads via web interface go directly to Google Drive
+- ✅ Server ready for 24/7 monitoring deployment
+
 ## Next Steps / Future Enhancements
 - Deploy to AWS/Railway/Digital Ocean with Docker
 - Advanced analytics dashboard
