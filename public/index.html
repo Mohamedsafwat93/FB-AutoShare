@@ -145,16 +145,30 @@
     .tiktok-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.8); }
     .instagram-btn { background: linear-gradient(135deg, #fd1d1d, #833ab4); color: #fff; }
     .instagram-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(253, 29, 29, 0.6); }
-    .whatsapp-btn { 
-        background: linear-gradient(135deg, #25d366, #128c7e); 
-        color: #fff; 
-        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4);
-        animation: whatsappGlow 3s ease-in-out infinite;
-        border: 2px solid transparent;
+    .connect-heading {
+        display: inline-block;
+        color: #00ffd5;
+        margin-bottom: 15px;
+        font-size: 28px;
+        font-weight: 700;
+        text-decoration: none;
+        background: linear-gradient(135deg, #00ffd5, #00d0ff, #00ffd5);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        padding: 15px 30px;
+        border-radius: 15px;
+        border: 2px solid #00ffd5;
+        box-shadow: 0 0 20px rgba(0, 255, 213, 0.3), inset 0 0 15px rgba(0, 208, 255, 0.1);
+        animation: connectGlow 3s ease-in-out infinite, colorShift 4s ease-in-out infinite;
+        cursor: pointer;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
         position: relative;
         overflow: hidden;
     }
-    .whatsapp-btn::before {
+    
+    .connect-heading::before {
         content: '';
         position: absolute;
         top: 0;
@@ -162,27 +176,36 @@
         width: 100%;
         height: 100%;
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        animation: whatsappShine 3s infinite;
+        animation: connectShine 3s infinite;
+        z-index: -1;
     }
-    .whatsapp-btn:hover { 
-        transform: translateY(-4px) scale(1.1);
-        box-shadow: 0 10px 30px rgba(37, 211, 102, 0.8), inset 0 0 20px rgba(37, 211, 102, 0.3);
-        background: linear-gradient(135deg, #00d960, #07b398);
-        border-color: #25d366;
+    
+    .connect-heading:hover {
+        transform: translateY(-5px) scale(1.15) rotate(1deg);
+        box-shadow: 0 15px 40px rgba(0, 255, 213, 0.8), inset 0 0 20px rgba(0, 208, 255, 0.3), 0 0 30px rgba(0, 208, 255, 0.5);
+        border-color: #00ffff;
+        background: linear-gradient(135deg, #00ffff, #00ffd5, #00ffff);
+        background-size: 200% 200%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
     }
-    .whatsapp-btn:active {
+    
+    .connect-heading:active {
         transform: translateY(-1px) scale(1.02);
-        box-shadow: 0 4px 15px rgba(37, 211, 102, 0.5);
+        box-shadow: 0 8px 20px rgba(0, 255, 213, 0.5), inset 0 0 10px rgba(0, 208, 255, 0.2);
     }
-    @keyframes whatsappGlow {
+    
+    @keyframes connectGlow {
         0%, 100% {
-            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.4), 0 0 20px rgba(37, 211, 102, 0.2);
+            box-shadow: 0 0 20px rgba(0, 255, 213, 0.3), inset 0 0 15px rgba(0, 208, 255, 0.1);
         }
         50% {
-            box-shadow: 0 4px 20px rgba(37, 211, 102, 0.7), 0 0 30px rgba(37, 211, 102, 0.4);
+            box-shadow: 0 0 35px rgba(0, 255, 213, 0.7), inset 0 0 25px rgba(0, 208, 255, 0.2), 0 0 50px rgba(0, 208, 255, 0.4);
         }
     }
-    @keyframes whatsappShine {
+    
+    @keyframes connectShine {
         0% { left: -100%; }
         50% { left: 100%; }
         100% { left: 100%; }
@@ -673,7 +696,7 @@
     </div>
 
 <footer>
-    <h3 style="color: #00ffd5; margin-bottom: 15px;">Connect With Me</h3>
+    <a href="https://wa.me/201127008149" target="_blank" class="connect-heading">💬 Connect With Me</a>
     <div class="social-container">
         <a href="https://kutt.it/SolutionsFB" target="_blank" class="social-btn facebook-btn">
             👍 Facebook
@@ -686,9 +709,6 @@
         </a>
         <a href="https://kutt.it/SolutionsIG" target="_blank" class="social-btn instagram-btn">
             📸 Instagram
-        </a>
-        <a href="https://wa.me/201127008149" target="_blank" class="social-btn whatsapp-btn">
-            💬 WhatsApp
         </a>
         <a href="https://github.com/Mohamedsafwat93" target="_blank" class="social-btn github-btn">
             🚀 GitHub
