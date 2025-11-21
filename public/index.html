@@ -299,7 +299,7 @@ function trackMediaUpload(type) {
 
 async function loadStats() {
     try {
-        const res = await fetch("/api/stats?t=" + Date.now());
+        const res = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/stats?t=" + Date.now());
         const data = await res.json();
 
         let cpu = data.cpu?.usage || 0;
@@ -391,7 +391,7 @@ function restartServer() {
         return;
     }
     
-    fetch("/api/restart", { 
+    fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/restart", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: password })
@@ -419,7 +419,7 @@ function cleanupDisk() {
         return;
     }
     
-    fetch("/api/cleanup", { 
+    fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/cleanup", { 
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: password })
@@ -480,7 +480,7 @@ async function postToFacebook() {
             }
         }, 200);
         
-        const response = await fetch("/api/facebook/post", {
+        const response = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/post", {
             method: "POST",
             body: formData
         });
@@ -535,7 +535,7 @@ async function autoSyncGroups() {
     statusEl.innerHTML = '⏳ Syncing your Facebook groups...';
     
     try {
-        const response = await fetch('/api/facebook/auto-groups');
+        const response = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/auto-groups");
         const data = await response.json();
         
         if(!response.ok) {
@@ -637,7 +637,7 @@ async function postToSelectedGroup() {
         if(photoFile) formData.append('photo', photoFile);
         if(videoFile) formData.append('video', videoFile);
         
-        const response = await fetch('/api/facebook/group-post', {
+        const response = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/group-post", {
             method: 'POST',
             body: formData
         });
@@ -668,7 +668,7 @@ async function validateTokens() {
     statusEl.innerText = '⏳ Checking tokens...';
     
     try {
-        const response = await fetch('/api/facebook/validate-token');
+        const response = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/validate-token");
         const data = await response.json();
         
         let statusText = '';
@@ -704,7 +704,7 @@ function postToGroup(groupId, groupName) {
     const message = prompt(`💬 Enter message for "${groupName}":`);
     if(!message) return;
     
-    fetch("/api/facebook/group-post", {
+    fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/group-post", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -733,7 +733,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load page profile picture on startup
 async function loadPageProfilePicture() {
   try {
-    const response = await fetch('/api/facebook/page-info');
+    const response = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/facebook/page-info");
     const data = await response.json();
     
     if(data.success && data.page.picture) {
@@ -755,7 +755,7 @@ loadStats();
 // Quick Stats Update
 async function updateQuickStats() {
   try {
-    const res = await fetch("/api/server-stats?t=" + Date.now());
+    const res = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/server-stats?t=" + Date.now());
     const data = await res.json();
 
     const ramUsed = (data.ram.used / 1024 / 1024).toFixed(2);
@@ -777,7 +777,7 @@ async function updateQuickStats() {
 // Network Stats Update
 async function updateNetworkStats() {
   try {
-    const res = await fetch("/api/stats?t=" + Date.now());
+    const res = await fetch("https://90a21f85-59cd-468c-92ca-f21345e34e01-00-185pp29xf8ojp.worf.replit.dev/api/stats?t=" + Date.now());
     const data = await res.json();
     
     const net = data.network || { rx_sec: 0, tx_sec: 0 };
