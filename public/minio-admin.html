@@ -183,10 +183,16 @@
             document.getElementById('filesContainer').innerHTML = '<div class="loading">Loading files...</div>';
             
             try {
-                const res = await fetch(`/api/minio/files/${bucket}`);
+                // Set timeout for file loading (6 seconds)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                
+                const res = await fetch(`/api/minio/files/${bucket}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 const data = await res.json();
                 
-                if (data.files.length === 0) {
+                if (!data.files || data.files.length === 0) {
                     document.getElementById('filesContainer').innerHTML = '<p style="color: #888;">No files in this bucket</p>';
                 } else {
                     const html = data.files.map(file => `
@@ -201,31 +207,59 @@
                     document.getElementById('filesContainer').innerHTML = html;
                 }
                 
+                // Load stats after files
                 loadStats(bucket);
             } catch (err) {
-                document.getElementById('filesContainer').innerHTML = 
-                    `<p class="error">Error: ${err.message}</p>`;
+                if (err.name === 'AbortError') {
+                    document.getElementById('filesContainer').innerHTML = 
+                        `<p class="error">⏱️ Connection timeout - MinIO may not be running</p>`;
+                } else {
+                    document.getElementById('filesContainer').innerHTML = 
+                        `<p class="error">Error: ${err.message}</p>`;
+                }
             }
         }
 
         async function loadStats(bucket) {
             try {
-                const res = await fetch(`/api/minio/stats/${bucket}`);
+                // Set timeout for stats loading (6 seconds)
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 6000);
+                
+                const res = await fetch(`/api/minio/stats/${bucket}`, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                
                 const data = await res.json();
                 
+                let statusMsg = '';
+                if (data.warning) {
+                    statusMsg = `<p style="color: #ffaa00; font-size: 11px;">⚠️ ${data.warning}</p>`;
+                }
+                
                 const html = `
+                    ${statusMsg}
                     <div class="stat">
                         <div class="stat-label">📊 Total Files</div>
-                        <div class="stat-value">${data.fileCount}</div>
+                        <div class="stat-value">${data.fileCount || 0}</div>
                     </div>
                     <div class="stat">
                         <div class="stat-label">💾 Total Size</div>
-                        <div class="stat-value">${data.totalSizeMB} MB</div>
+                        <div class="stat-value">${data.totalSizeMB || '0.00'} MB</div>
                     </div>
                 `;
                 document.getElementById('statsContainer').innerHTML = html;
             } catch (err) {
-                console.log('Stats error:', err);
+                if (err.name === 'AbortError') {
+                    document.getElementById('statsContainer').innerHTML = `
+                        <p class="error">⏱️ Connection timeout</p>
+                        <p style="font-size: 11px; color: #888;">MinIO may not be running</p>
+                    `;
+                } else {
+                    document.getElementById('statsContainer').innerHTML = `
+                        <p class="error">❌ Error loading stats</p>
+                        <p style="font-size: 11px; color: #888;">${err.message}</p>
+                    `;
+                }
             }
         }
 

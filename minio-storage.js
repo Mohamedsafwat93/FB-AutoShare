@@ -181,10 +181,17 @@ async function deleteFile(bucketName, fileName) {
     }
 }
 
-// 📊 Get Bucket Stats
+// 📊 Get Bucket Stats with timeout
 async function getBucketStats(bucketName) {
     try {
-        const files = await getFilesList(bucketName);
+        // Set a timeout for MinIO operations (5 seconds max)
+        const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('MinIO connection timeout')), 5000)
+        );
+
+        const filesPromise = getFilesList(bucketName);
+        const files = await Promise.race([filesPromise, timeoutPromise]);
+        
         const totalSize = files.reduce((sum, file) => sum + file.size, 0);
         
         return {
@@ -192,10 +199,21 @@ async function getBucketStats(bucketName) {
             fileCount: files.length,
             totalSize: totalSize,
             totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-            files: files
+            files: files,
+            success: true
         };
     } catch (error) {
-        return { error: error.message };
+        // Return fallback stats even if MinIO fails
+        return { 
+            bucket: bucketName,
+            fileCount: 0,
+            totalSize: 0,
+            totalSizeMB: '0.00',
+            files: [],
+            success: false,
+            warning: 'MinIO unavailable - showing empty stats',
+            error: error.message
+        };
     }
 }
 
