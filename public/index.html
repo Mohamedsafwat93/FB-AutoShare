@@ -6,6 +6,7 @@
 <title>Server Dashboard 2025</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
     body { font-family: 'Segoe UI', sans-serif; background: #0d0d0d; color: #fff; }
     h1 { text-align: center; margin: 30px 0 10px 0; font-size: 35px; font-weight: 600; letter-spacing: 2px; color: #00d0ff; }
@@ -43,6 +44,13 @@
     .group-item { background: #1a1a1a; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid #1877f2; font-size: 12px; }
     .facebook-section { background: #121212; padding: 15px; border-radius: 8px; margin: 20px 0; }
     .facebook-section h3 { color: #00ffd5; margin-top: 0; }
+    .file-input-wrapper { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+    .file-input-label { flex: 1; min-width: 140px; position: relative; cursor: pointer; }
+    .file-input-label input[type="file"] { display: none; }
+    .file-input-box { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%); border: 2px solid #00d0ff; border-radius: 8px; transition: all 0.3s ease; font-size: 13px; font-weight: 600; color: #00ffd5; }
+    .file-input-label:hover .file-input-box { background: linear-gradient(135deg, #1a3a3a 0%, #0d2a2a 100%); border-color: #00ffff; box-shadow: 0 0 15px rgba(0, 208, 255, 0.3); transform: translateY(-2px); }
+    .file-input-label input[type="file"]:focus + .file-input-box { border-color: #00ffff; box-shadow: 0 0 20px rgba(0, 208, 255, 0.5); }
+    .file-input-box i { font-size: 18px; }
     @media (max-width: 768px) { #container { grid-template-columns: 1fr; } #services { grid-column: span 1; } .stats { grid-template-columns: 1fr; } }
 </style>
 </head>
