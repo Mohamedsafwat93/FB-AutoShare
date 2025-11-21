@@ -1377,6 +1377,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Start server
 const PORT = 5000;
 app.listen(PORT, ()=>{
+  // طباعة توقيت السيرفر الحقيقي عند التشغيل
+  console.log('\n⏰ ====== توقيت السيرفر ======');
+  console.log('توقيت السيرفر الحالي (Server Time):', new Date().toString());
+  console.log('توقيت السيرفر بتوقيت مصر:', new Date().toLocaleString('ar-EG'));
+  console.log('توقيت UTC:', new Date().toISOString());
+  console.log('================================\n');
+  
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📤 File upload API: POST /api/upload`);
   console.log(`🔔 Notification System: POST /api/test-notification`);
