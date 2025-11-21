@@ -134,7 +134,10 @@
 
             <!-- Post to Page -->
             <div style="margin-bottom: 15px;">
-                <h4 style="color: #00ffd5; margin: 10px 0;">📄 Post to IT-Solutions Page</h4>
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                  <img id="page-profile-pic" src="" alt="Page Profile" style="width: 50px; height: 50px; border-radius: 50%; background: #1a1a1a; border: 2px solid #00ffd5; object-fit: cover; display: none;">
+                  <h4 style="color: #00ffd5; margin: 0; flex: 1;">📄 Post to IT-Solutions Page</h4>
+                </div>
                 <input type="text" id="fb-message" placeholder="Enter your message..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                 <input type="text" id="fb-link" placeholder="Optional link..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                 <div style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
@@ -667,6 +670,25 @@ function postToGroup(groupId, groupName) {
     })
     .catch(err => alert('❌ Error: ' + err.message));
 }
+
+// Load page profile picture on startup
+async function loadPageProfilePicture() {
+  try {
+    const response = await fetch('/api/facebook/page-info');
+    const data = await response.json();
+    
+    if(data.success && data.page.picture) {
+      const img = document.getElementById('page-profile-pic');
+      img.src = data.page.picture;
+      img.style.display = 'block';
+      img.title = data.page.name;
+    }
+  } catch(err) {
+    console.log('Could not load page picture:', err.message);
+  }
+}
+
+loadPageProfilePicture();
 
 setInterval(loadStats, 1500);
 loadStats();
