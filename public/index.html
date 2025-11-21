@@ -44,22 +44,23 @@
     .group-item { background: #1a1a1a; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 3px solid #1877f2; font-size: 12px; }
     .facebook-section { background: #121212; padding: 15px; border-radius: 8px; margin: 20px 0; }
     .facebook-section h3 { color: #00ffd5; margin-top: 0; }
-    .file-input-wrapper { display: flex; gap: 10px; margin: 8px 0; flex-wrap: wrap; justify-content: center; }
-    .file-input-label { position: relative; cursor: pointer; flex: 0 0 auto; }
+    .file-input-wrapper { display: flex; gap: 12px; margin: 12px 0; flex-wrap: wrap; justify-content: center; }
+    .file-input-label { position: relative; cursor: pointer; flex: 1; min-width: 90px; max-width: 120px; }
     .file-input-label input[type="file"] { display: none; }
-    .file-input-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px 3px; background: linear-gradient(135deg, #1a2a3a 0%, #0d1a2a 100%); border: 2px dashed #00d0ff; border-radius: 8px; transition: all 0.4s ease; color: #00ffd5; width: 50px; height: 50px; position: relative; }
+    .file-input-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 18px 12px; background: linear-gradient(135deg, #1a2a3a 0%, #0d1a2a 100%); border: 2px dashed #00d0ff; border-radius: 10px; transition: all 0.4s ease; color: #00ffd5; min-height: 85px; }
     .file-input-box.has-file { border: 2px solid #00ff88; background: linear-gradient(135deg, #1a3a2a 0%, #0d2a1a 100%); }
-    .file-input-label:hover .file-input-box { background: linear-gradient(135deg, #1a4a5a 0%, #0d2a4a 100%); border-color: #00ffff; box-shadow: 0 0 20px rgba(0, 208, 255, 0.5); transform: scale(1.1); }
-    .file-input-label.drag-over .file-input-box { border-color: #00ffff; background: linear-gradient(135deg, #2a5a7a 0%, #1d3a5a 100%); box-shadow: 0 0 30px rgba(0, 255, 255, 0.7); border-style: solid; }
-    .file-input-label input[type="file"]:focus + .file-input-box { border-color: #00ffff; box-shadow: 0 0 25px rgba(0, 208, 255, 0.8); }
-    .file-input-box i { transition: all 0.3s ease; color: #00ffd5; font-size: 18px; }
+    .file-input-label:hover .file-input-box { background: linear-gradient(135deg, #1a4a5a 0%, #0d2a4a 100%); border-color: #00ffff; box-shadow: 0 0 20px rgba(0, 208, 255, 0.5); transform: translateY(-3px) scale(1.05); }
+    .file-input-label.drag-over .file-input-box { border-color: #00ffff; background: linear-gradient(135deg, #2a5a7a 0%, #1d3a5a 100%); box-shadow: 0 0 25px rgba(0, 255, 255, 0.7); border-style: solid; }
+    .file-input-label input[type="file"]:focus + .file-input-box { border-color: #00ffff; box-shadow: 0 0 20px rgba(0, 208, 255, 0.8); }
+    .file-input-box i { transition: all 0.3s ease; color: #00ffd5; font-size: 22px; margin-bottom: 5px; }
     .file-input-label:hover .file-input-box i { color: #00ffff; transform: scale(1.15) rotate(-5deg); }
-    .file-label-text { display: none; }
-    .file-label-info { display: none; }
-    .file-preview { display: none !important; }
-    .file-info-box { display: none !important; }
-    .file-info-text { font-size: 9px; color: #00ffd5; margin: 2px 0; }
-    .file-clear-btn { display: none; }
+    .file-label-text { font-size: 10px; color: #00ffd5; font-weight: 600; text-align: center; }
+    .file-label-info { font-size: 8px; color: #888; margin-top: 4px; text-align: center; }
+    .file-preview { width: 100%; height: 40px; border-radius: 8px; object-fit: cover; margin-top: 6px; border: 1px solid #00d0ff; display: none; }
+    .file-info-box { width: 100%; padding: 6px; background: #0d0d0d; border-radius: 6px; margin-top: 6px; border: 1px solid #00ffd5; display: none; }
+    .file-info-text { font-size: 8px; color: #00ffd5; margin: 3px 0; word-break: break-all; }
+    .file-clear-btn { margin-top: 4px; padding: 3px 8px; background: #ff4444; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 9px; transition: 0.2s; display: none; }
+    .file-clear-btn:hover { background: #ff6666; }
     .upload-progress-container { width: 100%; height: 6px; background: #0d0d0d; border-radius: 10px; margin: 12px 0; overflow: hidden; display: none; border: 1px solid #00d0ff; }
     .upload-progress-container.active { display: block; }
     .upload-progress-bar { height: 100%; background: linear-gradient(90deg, #00ff88 0%, #00ffaa 50%, #00ff88 100%); width: 0%; border-radius: 10px; transition: width 0.3s ease; box-shadow: 0 0 15px rgba(0, 255, 136, 0.6); }
