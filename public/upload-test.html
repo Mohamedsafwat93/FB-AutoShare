@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Drive Upload Test</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
+      color: #e0e0e0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .container {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid #00ffd5;
+      border-radius: 15px;
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 255, 213, 0.1);
+      backdrop-filter: blur(10px);
+    }
+    h1 {
+      color: #00ffd5;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+    .subtitle {
+      color: #00d0ff;
+      font-size: 14px;
+      margin-bottom: 30px;
+    }
+    .upload-box {
+      border: 2px dashed #00ffd5;
+      border-radius: 10px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-bottom: 20px;
+    }
+    .upload-box:hover {
+      background: rgba(0, 255, 213, 0.1);
+      border-color: #00d0ff;
+    }
+    .upload-box.dragover {
+      background: rgba(0, 255, 213, 0.2);
+      border-color: #00d0ff;
+    }
+    input[type="file"] {
+      display: none;
+    }
+    .upload-icon {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+    .upload-text {
+      font-size: 14px;
+      color: #b0b0b0;
+    }
+    .button {
+      background: linear-gradient(135deg, #00ffd5, #00d0ff);
+      color: #000;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 25px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      width: 100%;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 255, 213, 0.3);
+    }
+    .button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      display: none;
+    }
+    .status.show {
+      display: block;
+    }
+    .status.success {
+      background: rgba(0, 255, 100, 0.2);
+      border: 1px solid #00ff64;
+      color: #00ff64;
+    }
+    .status.error {
+      background: rgba(255, 100, 100, 0.2);
+      border: 1px solid #ff6464;
+      color: #ff6464;
+    }
+    .status.loading {
+      background: rgba(0, 213, 255, 0.2);
+      border: 1px solid #00d5ff;
+      color: #00d5ff;
+    }
+    .result-link {
+      margin-top: 10px;
+      word-break: break-all;
+    }
+    .result-link a {
+      color: #00ffd5;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    .result-link a:hover {
+      color: #00d0ff;
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🚀 Google Drive Upload Test</h1>
+    <p class="subtitle">Test your Google Drive integration</p>
+    
+    <div class="upload-box" id="uploadBox">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">Click to select a file or drag & drop</div>
+      <input type="file" id="fileInput">
+    </div>
+
+    <button class="button" id="uploadBtn">Upload to Google Drive</button>
+
+    <div class="status" id="status">
+      <div id="statusMessage"></div>
+      <div id="resultLink"></div>
+    </div>
+  </div>
+
+  <script>
+    const uploadBox = document.getElementById('uploadBox');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const status = document.getElementById('status');
+    const statusMessage = document.getElementById('statusMessage');
+    const resultLink = document.getElementById('resultLink');
+
+    let selectedFile = null;
+
+    uploadBox.addEventListener('click', () => fileInput.click());
+
+    uploadBox.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadBox.classList.add('dragover');
+    });
+
+    uploadBox.addEventListener('dragleave', () => {
+      uploadBox.classList.remove('dragover');
+    });
+
+    uploadBox.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadBox.classList.remove('dragover');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        selectedFile = files[0];
+        fileInput.value = '';
+        uploadBox.innerHTML = `<div class="upload-icon">✅</div><div class="upload-text">${selectedFile.name}</div>`;
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files.length > 0) {
+        selectedFile = e.target.files[0];
+        uploadBox.innerHTML = `<div class="upload-icon">✅</div><div class="upload-text">${selectedFile.name}</div>`;
+      }
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+      if (!selectedFile) {
+        showStatus('Please select a file first', 'error');
+        return;
+      }
+
+      uploadBtn.disabled = true;
+      showStatus('Uploading...', 'loading');
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          const fileId = result.file.fileId || 'N/A';
+          const storage = result.file.storage || 'local';
+          statusMessage.textContent = `✅ ${result.message}\nStorage: ${storage}\nFile ID: ${fileId}`;
+          if (result.file.url) {
+            resultLink.innerHTML = `<div class="result-link"><a href="${result.file.url}" target="_blank">📎 Open in Google Drive</a></div>`;
+          }
+          status.className = 'status show success';
+        } else {
+          showStatus('❌ Upload failed: ' + result.error, 'error');
+        }
+      } catch (error) {
+        showStatus('❌ Error: ' + error.message, 'error');
+      } finally {
+        uploadBtn.disabled = false;
+      }
+    });
+
+    function showStatus(message, type) {
+      statusMessage.textContent = message;
+      resultLink.innerHTML = '';
+      status.className = `status show ${type}`;
+    }
+  </script>
+</body>
+</html>
