@@ -89,8 +89,11 @@
         <canvas id="netChart"></canvas>
     </div>
 
-    <!-- EMPTY TO ALIGN GRID -->
-    <div class="card"></div>
+    <!-- DISK CLEANUP BUTTON -->
+    <div class="card">
+        <h2>Disk Cleanup</h2>
+        <button onclick="cleanupDisk()" style="background: #00ff62; color: #000;">Clean Disk Cache</button>
+    </div>
 
     <!-- RESTART BUTTON -->
     <div class="card">
@@ -250,6 +253,38 @@ function restartServer() {
             alert("❌ " + data.error);
         } else {
             alert("✅ " + data.message);
+        }
+    })
+    .catch(err => alert("❌ Error: " + err.message));
+}
+
+function cleanupDisk() {
+    const password = prompt("🔒 Enter password to cleanup disk cache:");
+    
+    if(password === null) {
+        return; // User cancelled
+    }
+    
+    if(password === "") {
+        alert("❌ Password cannot be empty");
+        return;
+    }
+    
+    fetch("/api/cleanup", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) {
+            alert("❌ " + data.error);
+        } else {
+            let message = "✅ " + data.message + "\n\n";
+            if(data.results) {
+                message += data.results.join("\n");
+            }
+            alert(message);
         }
     })
     .catch(err => alert("❌ Error: " + err.message));
