@@ -1,0 +1,22 @@
+⚠️ FACEBOOK APP NAME ISSUE
+
+The problem: Posts show "Published by CreatorSolutions" instead of "IT-Solutions Page"
+
+This is because Facebook displays the APP NAME when posts are created via API, 
+not the PAGE NAME.
+
+SOLUTION - Change Facebook App Name:
+
+1. Go to https://developers.facebook.com/apps/
+2. Select your app (CreatorSolutions)
+3. Settings > Basic
+4. Change "App Name" to "IT-Solutions" (or remove CreatorSolutions branding)
+5. Save changes
+
+After changing the app name, new posts will show:
+"Published by IT-Solutions"
+
+ALTERNATIVE SOLUTION (if app name cannot be changed):
+- The app name is metadata that helps identify the tool/service
+- It's normal for API posts to show the app creator
+- This is a Facebook UX limitation, not a code issue

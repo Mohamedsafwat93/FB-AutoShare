@@ -651,18 +651,20 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       
       console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
       
-      // Create feed post with photo attachment
+      // Create feed post with photo attachment - Ensure post appears AS page
       const feedPostData = {
         message: message,
         object_attachment: photoResponse.data.id,
-        access_token: pageToken
+        access_token: pageToken,
+        is_hidden_from_stream: false,
+        is_explicit_place: false
       };
       
       if(link) {
         feedPostData.link = link;
       }
       
-      console.log(`📤 Creating feed post with photo`);
+      console.log(`📤 Creating feed post with photo (As Page: ${pageName})`);
       const feedResponse = await axios.post(
         `https://graph.facebook.com/v19.0/${pageId}/feed`,
         feedPostData
