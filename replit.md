@@ -150,14 +150,22 @@ https://your-repl-url/
 - Optimized grid layout for responsive design
 
 ## File Storage
-- ✅ Local disk storage for all uploads
+- ✅ Local disk storage for all uploads (default)
+- ✅ Google Drive integration (optional)
 - ✅ Files saved to `/public/temp-uploads/`
 - ✅ Simple REST API for uploads
 
 ### Upload API
 ```
-POST /api/upload - Upload files
+POST /api/upload - Upload files (local or Google Drive)
+GET /api/drive/quota - Get Google Drive storage quota (requires authentication)
 ```
+
+### Google Drive Setup (Optional)
+1. Run: `node setup-google-drive.js`
+2. Follow the OAuth authentication steps
+3. Set `USE_GOOGLE_DRIVE=true` in `.env`
+4. Files will auto-upload to Google Drive
 
 ## System Features
 - ✅ 24/7 Server monitoring with hourly health checks

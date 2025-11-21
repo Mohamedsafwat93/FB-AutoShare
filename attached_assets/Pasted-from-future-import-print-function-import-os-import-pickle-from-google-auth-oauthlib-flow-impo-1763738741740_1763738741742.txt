@@ -1,0 +1,69 @@
+from __future__ import print_function
+import os
+import pickle
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+# ---------- إعداد Google Drive API ----------
+SCOPES = ['https://www.googleapis.com/auth/drive']
+
+creds = None
+if os.path.exists('token.pickle'):
+    with open('token.pickle', 'rb') as token:
+        creds = pickle.load(token)
+
+if not creds or not creds.valid:
+    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+    creds = flow.run_local_server(port=0)
+    with open('token.pickle', 'wb') as token:
+        pickle.dump(creds, token)
+
+service = build('drive', 'v3', credentials=creds)
+
+# ---------- دالة لمعرفة مساحة التخزين ----------
+def check_storage():
+    about = service.about().get(fields="storageQuota").execute()
+    quota = about['storageQuota']
+    total = int(quota['limit'])
+    used = int(quota['usage'])
+    free = total - used
+    print(f"Total: {total / (1024**3):.2f} GB")
+    print(f"Used: {used / (1024**3):.2f} GB")
+    print(f"Free: {free / (1024**3):.2f} GB")
+    return free
+
+# ---------- دالة رفع ملف ----------
+def upload_file(file_path, folder_id=None):
+    file_metadata = {'name': os.path.basename(file_path)}
+    if folder_id:
+        file_metadata['parents'] = [folder_id]
+    media = MediaFileUpload(file_path, resumable=True)
+    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+    print(f'Uploaded {file_path}, File ID: {file.get("id")}')
+    return file.get('id')
+
+# ---------- دالة حذف كل الملفات في فولدر معين ----------
+def delete_all_files_in_folder(folder_id):
+    results = service.files().list(q=f"'{folder_id}' in parents", fields="files(id, name)").execute()
+    items = results.get('files', [])
+    for item in items:
+        service.files().delete(fileId=item['id']).execute()
+        print(f'Deleted {item["name"]}')
+
+# ---------- الإعدادات ----------
+FOLDER_ID = 'ضع هنا Folder ID على Google Drive'  # اعمل فولدر جديد على Drive وخد ID بتاعه
+LOCAL_FOLDER = '/root/ITSolutions-MonthlyStorage'  # مجلد السيرفر اللي فيه الملفات
+
+# ---------- التنفيذ ----------
+free_space = check_storage()
+if free_space < 1*1024**3:  # أقل من 1 GB متاحة
+    print("Warning: Less than 1GB free, check account storage!")
+
+# حذف الملفات القديمة أول الشهر
+delete_all_files_in_folder(FOLDER_ID)
+
+# رفع الملفات الجديدة
+for file_name in os.listdir(LOCAL_FOLDER):
+    file_path = os.path.join(LOCAL_FOLDER, file_name)
+    upload_file(file_path, folder_id=FOLDER_ID)
