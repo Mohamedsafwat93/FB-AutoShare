@@ -1311,7 +1311,7 @@ app.post('/api/schedule-post', upload.fields([
     scheduledPosts.push(newPost);
     saveScheduledPosts();
 
-    console.log(`[Scheduled] New post at ${new Date(scheduledTime).toLocaleString('en-GB')} (Egypt Time)`);
+    console.log(`[Scheduled] Post at ${new Date(scheduledTime).toLocaleString('en-GB')} (Egypt Time)`);
     res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
   } catch (err) {
     console.error('Schedule error:', err);
@@ -1319,19 +1319,19 @@ app.post('/api/schedule-post', upload.fields([
   }
 });
 
-// ====================== الكرون جوب كل دقيقة (إنجليزي بس) ======================
+// ====================== الكرون جوب (إنجليزي + تليجرام + جيميل) ======================
 cron.schedule('* * * * *', async () => {
   const now = Date.now();
-  console.log(`\n[CRON] Checking scheduled posts... Server time: ${new Date(now).toLocaleString('en-GB')}`);
+  console.log(`\n[CRON] Checking posts... Server time: ${new Date(now).toLocaleString('en-GB')}`);
 
-  let publishedThisMinute = false;
+  let published = false;
 
   for (let i = 0; i < scheduledPosts.length; i++) {
     const post = scheduledPosts[i];
 
     if (post.status === 'pending' && post.schedule_time <= now) {
-      publishedThisMinute = true;
-      console.log(`[PUBLISH] Now publishing post #${i+1} scheduled for ${new Date(post.schedule_time).toLocaleString('en-GB')}`);
+      published = true;
+      console.log(`[PUBLISH] Publishing post scheduled for ${new Date(post.schedule_time).toLocaleString('en-GB')}`);
 
       try {
         const { pageToken, pageId } = await getPageAccessToken();
@@ -1348,7 +1348,7 @@ cron.schedule('* * * * *', async () => {
             filename: isVideo ? 'video.mp4' : 'photo.jpg',
             contentType: isVideo ? 'video/mp4' : 'image/jpeg'
           });
-          form.append(isVideo ? 'caption' : 'caption', post.message);
+          form.append(isVideo ? 'description' : 'caption', post.message);
           form.append('access_token', pageToken);
 
           const endpoint = isVideo 
@@ -1369,40 +1369,43 @@ cron.schedule('* * * * *', async () => {
           finalPostId = res.data.id;
         }
 
-        // إشعار تليجرام و جيميل
         const postUrl = `https://facebook.com/${finalPostId}`;
         const successMsg = `Post published successfully!\n\n${post.message.substring(0, 150)}...\n\nLink: ${postUrl}`;
-        
-        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, successMsg);
-        await sendGmailNotification('✅ Post Published Successfully', successMsg);
+
+        // تليجرام
+        if (telegramBot) {
+          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, successMsg);
+        }
+
+        // جيميل (رجع تاني!)
+        await sendGmailNotification('Post Published Successfully', successMsg);
 
         post.status = 'published';
         post.post_id = finalPostId;
         post.published_at = Date.now();
-        console.log(`[SUCCESS] Post published: ${finalPostId}`);
+        console.log(`[SUCCESS] Published: ${finalPostId}`);
 
       } catch (err) {
-        const errMsg = `Failed to publish scheduled post!\n\nError: ${err.response?.data?.error?.message || err.message}`;
-        console.error('[ERROR] Failed to publish post:', err.response?.data || err.message);
-        post.status = 'failed';
-        post.error = err.response?.data?.error?.message || err.message;
+        const errMsg = `Failed to publish post!\nError: ${err.response?.data?.error?.message || err.message}`;
+        console.error('[ERROR] Publish failed:', err.response?.data || err.message);
 
         if (telegramBot) {
           await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, errMsg);
         }
-        await sendGmailNotification('❌ Post Publish Failed', errMsg);
+        await sendGmailNotification('Post Publish Failed', errMsg);
+
+        post.status = 'failed';
+        post.error = err.response?.data?.error?.message || err.message;
       }
 
       saveScheduledPosts();
     }
   }
 
-  if (!publishedThisMinute) {
-    console.log('[CRON] No posts ready to publish this minute');
-  }
+  if (!published) console.log('[CRON] No posts to publish this minute');
 });
 
-// تنظيف يومي للبوستات المنشورة
+// تنظيف يومي
 cron.schedule('0 0 * * *', () => {
   const before = scheduledPosts.length;
   scheduledPosts = scheduledPosts.filter(p => p.status !== 'published');
