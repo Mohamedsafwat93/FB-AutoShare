@@ -75,61 +75,44 @@
     
     .profile-image-container {
         position: relative;
-        height: 100px;
-        width: 100px;
-        border-radius: 50%;
+        height: 140px;
+        width: 140px;
+        border-radius: 20px;
         overflow: hidden;
         display: flex;
         align-items: center;
         justify-content: center;
         background: linear-gradient(135deg, #1877f2, #0a66c2);
         border: 3px solid #00ffd5;
-        box-shadow: 0 0 20px rgba(0, 208, 255, 0.4), 0 0 40px rgba(0, 255, 213, 0.2), inset 0 0 15px rgba(0, 208, 255, 0.15);
-        animation: profileRotate 20s linear infinite, profileGlow 3s ease-in-out infinite;
+        box-shadow: 0 0 25px rgba(0, 208, 255, 0.4), 0 0 50px rgba(0, 255, 213, 0.2), inset 0 0 15px rgba(0, 208, 255, 0.15);
+        animation: profileGlow 3s ease-in-out infinite;
         backdrop-filter: blur(10px);
         position: relative;
-    }
-    
-    @keyframes profileRotate {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        flex-shrink: 0;
     }
     
     @keyframes profileGlow {
-        0%, 100% { box-shadow: 0 0 20px rgba(0, 208, 255, 0.4), 0 0 40px rgba(0, 255, 213, 0.2), inset 0 0 15px rgba(0, 208, 255, 0.15); }
-        50% { box-shadow: 0 0 30px rgba(0, 208, 255, 0.6), 0 0 60px rgba(0, 255, 213, 0.4), inset 0 0 20px rgba(0, 208, 255, 0.25); }
-    }
-    
-    .profile-image-container::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 255, 0.1), transparent 70%);
-        animation: shimmerSweep 4s infinite;
-    }
-    
-    @keyframes shimmerSweep {
-        0% { transform: rotate(0deg) translateX(0); }
-        100% { transform: rotate(360deg) translateX(100px); }
+        0%, 100% { box-shadow: 0 0 25px rgba(0, 208, 255, 0.4), 0 0 50px rgba(0, 255, 213, 0.2), inset 0 0 15px rgba(0, 208, 255, 0.15); }
+        50% { box-shadow: 0 0 35px rgba(0, 208, 255, 0.6), 0 0 70px rgba(0, 255, 213, 0.4), inset 0 0 20px rgba(0, 208, 255, 0.25); }
     }
     
     .profile-image-inner {
         position: relative;
         width: 100%;
         height: 100%;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #1877f2, #0a66c2);
+        border-radius: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 45px;
-        font-weight: 900;
-        color: #00ffd5;
-        text-shadow: 0 0 15px rgba(0, 208, 255, 0.6);
         z-index: 2;
+    }
+    
+    .profile-image-inner img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 20px;
+        display: block;
     }
     
     .facebook-logo-img {
@@ -766,7 +749,9 @@
 
 <div class="header-wrapper">
     <div class="profile-image-container">
-        <div class="profile-image-inner">MS</div>
+        <div class="profile-image-inner">
+            <img src="profile.jpg" alt="MS IT Solutions" loading="lazy">
+        </div>
     </div>
     <svg width="70" height="70" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg" class="facebook-logo-img" style="filter: drop-shadow(0 4px 15px rgba(0, 208, 255, 0.4));">
         <rect x="10" y="10" width="50" height="50" rx="8" fill="url(#facebookGradient)" stroke="#00ffd5" stroke-width="2"/>
