@@ -85,11 +85,14 @@ async function processImage(imageBuffer) {
     }
 }
 
-// 📤 Upload File to MinIO
+// 📤 Upload File to MinIO or Fallback to Disk Storage
 async function uploadToMinIO(fileBuffer, bucketName, fileName, metadata = {}) {
+    const fs = require('fs');
+    const pathModule = require('path');
+    
+    const objectName = `${Date.now()}-${fileName}`;
+    
     try {
-        const objectName = `${Date.now()}-${fileName}`;
-        
         await minioClient.putObject(
             bucketName,
             objectName,
@@ -110,10 +113,39 @@ async function uploadToMinIO(fileBuffer, bucketName, fileName, metadata = {}) {
             objectName,
             bucketName,
             url: fileUrl,
-            size: fileBuffer.length
+            size: fileBuffer.length,
+            storage: 'minio'
         };
-    } catch (error) {
-        return { success: false, error: error.message };
+    } catch (minioError) {
+        console.log(`MinIO upload failed: ${minioError.message}, using local storage fallback`);
+        
+        try {
+            const localStoragePath = pathModule.join(__dirname, 'public', 'uploaded-files', bucketName);
+            if (!fs.existsSync(localStoragePath)) {
+                fs.mkdirSync(localStoragePath, { recursive: true });
+            }
+            
+            const filePath = pathModule.join(localStoragePath, objectName);
+            fs.writeFileSync(filePath, fileBuffer);
+            
+            const fileUrl = `/uploaded-files/${bucketName}/${objectName}`;
+            
+            return {
+                success: true,
+                objectName,
+                bucketName,
+                url: fileUrl,
+                size: fileBuffer.length,
+                storage: 'local',
+                warning: 'MinIO unavailable - saved to local storage'
+            };
+        } catch (diskError) {
+            console.error(`Upload failed: ${diskError.message}`);
+            return { 
+                success: false, 
+                error: 'Upload failed: ' + diskError.message
+            };
+        }
     }
 }
 
