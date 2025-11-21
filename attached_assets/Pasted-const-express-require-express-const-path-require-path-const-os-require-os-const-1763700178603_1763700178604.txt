@@ -1,0 +1,74 @@
+const express = require('express');
+const path = require('path');
+const os = require('os');
+const si = require('systeminformation'); // npm install systeminformation
+const disk = require('diskusage');
+const { exec } = require('child_process');
+
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Stats API
+app.get('/api/stats', async (req, res) => {
+  let diskInfo;
+  try { diskInfo = await disk.check(path.parse(process.cwd()).root); } 
+  catch(e){ diskInfo = { total: 0, free: 0 }; }
+
+  const load = await si.currentLoad();
+  const network = await si.networkStats();
+
+  res.json({
+    uptime: process.uptime(),
+    platform: os.platform(),
+    osRelease: os.release(),
+    node: process.version,
+    cpuCores: os.cpus().length,
+    cpuModel: os.cpus()[0].model,
+    cpuUsage: load.currentLoad.toFixed(1),
+    totalMem: os.totalmem(),
+    freeMem: os.freemem(),
+    diskTotal: diskInfo.total,
+    diskFree: diskInfo.free,
+    diskUsed: diskInfo.total - diskInfo.free,
+    network: network[0] || { rx_sec:0, tx_sec:0 }
+  });
+});
+
+// Services API
+app.get('/api/services', (req,res)=>{
+  // Execute 'netstat -tulpn' to list active services & ports
+  exec('netstat -tulpn', (err, stdout, stderr)=>{
+    if(err){ return res.status(500).json({error: err.message}); }
+    const lines = stdout.split('\n').slice(2); // skip headers
+    const services = lines.map(line=>{
+      const parts = line.trim().split(/\s+/);
+      if(parts.length >=7){
+        return {
+          proto: parts[0],
+          recvQ: parts[1],
+          sendQ: parts[2],
+          localAddress: parts[3],
+          foreignAddress: parts[4],
+          state: parts[5],
+          pid_program: parts[6]
+        }
+      }
+      return null;
+    }).filter(x=>x);
+    res.json(services);
+  });
+});
+
+// Restart server
+app.post('/api/restart', (req,res)=>{
+  res.json({message:'Restart command received'});
+  console.log('Server restart requested.');
+});
+
+// Open login page
+app.get('/login', (req,res)=>{
+  res.sendFile(path.join(__dirname,'public/login.html'));
+});
+
+app.listen(5000, ()=>console.log('Server running on port 5000'));
