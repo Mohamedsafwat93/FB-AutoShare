@@ -1752,7 +1752,95 @@ updateQuickStats();
 
 setInterval(updateNetworkStats, 1000);
 updateNetworkStats();
+
+// ===================== نافذة وعرض البوستات المجدولة =====================
+// تحميل وعرض البوستات
+async function loadScheduledPosts() {
+  const modal = document.getElementById('postsModal');
+  const list = document.getElementById('postsList');
+  const update = document.getElementById('lastUpdate');
+  
+  if (!modal) {
+    alert('خطأ: النافذة غير موجودة');
+    return;
+  }
+  
+  modal.style.display = 'block';
+  list.innerHTML = '<p style="text-align:center; color:#00ffd5;">جاري تحميل البوستات...</p>';
+  
+  try {
+    const res = await fetch('/api/get-scheduled-posts');
+    const posts = await res.json();
+    
+    if (!posts || posts.length === 0) {
+      list.innerHTML = '<p style="text-align:center; color:#ff3366;">مفيش بوستات مجدولة حاليًا</p>';
+      return;
+    }
+    
+    list.innerHTML = posts.map((p, i) => `
+      <div style="background:#000; border:2px solid ${p.status==='published'?'#00ff9d':p.status==='failed'?'#ff3366':'#00d0ff'}; border-radius:16px; padding:20px; color:#fff;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
+          <strong>#${i+1} • الحالة: <span style="color:${p.status==='published'?'#0f0':p.status==='failed'?'#f66':'#0ff'}">${p.status.toUpperCase()}</span></strong>
+          <button onclick="deletePost('${p.id}')" style="background:#ff3366; color:#fff; border:none; padding:8px 15px; border-radius:10px; cursor:pointer;">حذف</button>
+        </div>
+        
+        <p style="background:#111; padding:12px; border-radius:10px; margin:10px 0; word-break:break-all;">${p.message}</p>
+        
+        ${p.photo || p.video ? `<div style="text-align:center; margin:15px 0;">
+          ${p.photo ? `<img src="${p.photo}" style="max-width:100%; max-height:300px; border-radius:12px;">` : ''}
+          ${p.video ? `<video src="${p.video}" controls style="max-width:100%; max-height:300px; border-radius:12px;"></video>` : ''}
+        </div>` : ''}
+        
+        <div style="background:#111; padding:12px; border-radius:10px; font-size:14px;">
+          <strong>التوقيت:</strong> ${new Date(p.schedule_time).toLocaleString('ar-EG')}<br>
+          <input type="datetime-local" id="newtime-${p.id}" value="${new Date(p.schedule_time).toISOString().slice(0,16)}" style="width:100%; margin-top:8px; padding:10px; background:#000; color:#fff; border:1px solid #00d0ff; border-radius:8px;">
+          <button onclick="updatePostTime('${p.id}')" style="margin-top:10px; background:#00d0ff; color:#000; padding:10px 20px; border:none; border-radius:10px; cursor:pointer; width:100%; font-weight:bold;">تحديث التوقيت</button>
+        </div>
+      </div>
+    `).join('');
+    
+    update.textContent = new Date().toLocaleString('ar-EG');
+  } catch (err) {
+    list.innerHTML = '<p style="text-align:center; color:#ff3366;">فشل تحميل البوستات</p>';
+  }
+}
+
+// حذف بوست
+async function deletePost(id) {
+  if (!confirm('متأكد إنك عايز تمسح البوست ده؟')) return;
+  await fetch('/api/delete-post', { method: 'POST', body: JSON.stringify({id}), headers: {'Content-Type':'application/json'} });
+  loadScheduledPosts();
+}
+
+// تحديث التوقيت
+async function updatePostTime(id) {
+  const newInput = document.getElementById(`newtime-${id}`).value;
+  if (!newInput) return alert('اختر وقت جديد');
+  
+  const newTimeUTC = new Date(newInput).getTime() - (2 * 60 * 60 * 1000);
+  
+  await fetch('/api/update-post-time', {
+    method: 'POST',
+    body: JSON.stringify({id, schedule_time: newTimeUTC}),
+    headers: {'Content-Type':'application/json'}
+  });
+  
+  alert('تم تحديث التوقيت بنجاح!');
+  loadScheduledPosts();
+}
 </script>
+
+<!-- ===================== نافذة عرض وتعديل البوستات ===================== -->
+<div id="postsModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:9999; overflow-y:auto;">
+  <div style="max-width:900px; margin:20px auto; background:#111; border-radius:20px; padding:25px; border:3px solid #00ffd5; position:relative;">
+    <h2 style="color:#00ffd5; text-align:center; margin:0 0 20px;">البوستات المجدولة</h2>
+    <button onclick="document.getElementById('postsModal').style.display='none'" style="position:absolute; top:15px; right:20px; background:#ff3366; color:#fff; border:none; padding:10px 15px; border-radius:50%; font-size:20px; cursor:pointer;">×</button>
+    <div id="postsList" style="display:grid; gap:20px;"></div>
+    <div style="text-align:center; margin-top:30px; color:#888;">
+      <small>آخر تحديث: <span id="lastUpdate"></span></small>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
