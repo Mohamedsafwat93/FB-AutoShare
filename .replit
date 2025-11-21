@@ -37,10 +37,6 @@ externalPort = 3001
 localPort = 36177
 externalPort = 3000
 
-[[ports]]
-localPort = 40171
-externalPort = 3002
-
 [nix]
 channel = "stable-25_05"
 packages = ["glibcLocales", "nettools"]

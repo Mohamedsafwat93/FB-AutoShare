@@ -388,6 +388,9 @@ async function autoSyncGroups() {
         
         if(!response.ok) {
             statusEl.innerHTML = '❌ ' + (data.error || 'Failed to sync groups');
+            if(data.suggestion) {
+                statusEl.innerHTML += '<br><small style="color: #ffaa00;">' + data.suggestion + '</small>';
+            }
             return;
         }
         
@@ -416,7 +419,7 @@ async function autoSyncGroups() {
             html += '</div>';
             statusEl.innerHTML = `<p style="color: #00ff62;">✅ Synced ${data.total} groups! Select one above to post.</p>` + html;
         } else {
-            statusEl.innerHTML = '❌ No groups found. Make sure you are a member of at least one Facebook group.';
+            statusEl.innerHTML = '❌ No groups found.<br><small style="color: #ffaa00;">Your token may not have "groups_manage" permission.<br>Try regenerating your Facebook token with full permissions.</small>';
         }
     } catch(err) {
         statusEl.innerHTML = '❌ Error: ' + err.message;
