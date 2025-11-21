@@ -650,12 +650,18 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         { headers: photoFormData.getHeaders() }
       );
       
-      console.log(`✅ Photo uploaded (unpublished): ${photoResponse.data.post_id}`);
+      console.log(`✅ Photo uploaded (unpublished): ${photoResponse.data.id || photoResponse.data.post_id}`);
       
-      // Create feed post with attached media using attached_media parameter
+      // Create feed post with attached media - Use the photo ID returned from upload
+      const photoId = photoResponse.data.post_id || photoResponse.data.id;
+      if(!photoId) {
+        console.error('❌ Photo ID not found in response:', photoResponse.data);
+        return res.status(400).json({error: 'Photo upload failed - no ID returned'});
+      }
+      
       const feedPostData = {
         message: message,
-        attached_media: [{ media_fbid: photoResponse.data.post_id }],
+        attached_media: [{ media_fbid: photoId }],
         access_token: pageToken
       };
       
