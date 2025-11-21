@@ -1296,30 +1296,26 @@ app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), 
   res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
 });
 
-// الكرون جوب بعد التعديل النهائي (يطبع كل دقيقة وينشر فعلاً)
+// الكرون جوب: فحص البوستات المجدولة ونشرها
 cron.schedule('* * * * *', async () => {
   const now = Date.now();
-  console.log(`\n⏰ جاري الفحص الدوري... الوقت الحالي: ${new Date(now).toLocaleString('ar-EG')}`);
+  console.log(`\nجاري الفحص الدوري... الوقت الحالي: ${new Date(now).toLocaleString('ar-EG')}`);
 
-  let found = false;
+  let hasPublished = false;
 
   for (let i = 0; i < scheduledPosts.length; i++) {
     const post = scheduledPosts[i];
-    const postTime = new Date(post.schedule_time).toLocaleString('ar-EG');
 
-    // طباعة كل بوست عشان نشوف إيه اللي بيحصل
-    console.log(`   - بوست #${i + 1}: ${postTime} | الحالة: ${post.status} | schedule_time: ${post.schedule_time} | now: ${now}`);
+    console.log(`- بوست #${i+1}: ${new Date(post.schedule_time).toLocaleString('ar-EG')} | الحالة: ${post.status}`);
 
     if (post.status === 'pending' && post.schedule_time <= now) {
-      found = true;
-      console.log(`   ✨ نشر البوست دلوقتي: "${post.message.substring(0, 50)}..."`);
+      hasPublished = true;
+      console.log(`نشر البوست دلوقتي: "${post.message.substring(0, 50)}..."`);
 
       try {
-        const pageToken = process.env.FB_PAGE_TOKEN;
-        const pageId = FB_PAGE_ID;
+        const { pageToken, pageId } = await getPageAccessToken();
         let finalPostId = null;
 
-        // نفس كود النشر اللي عندك (صورة أو بدون)
         if (post.photo) {
           const photoPath = path.join(__dirname, 'public', post.photo);
           const photoBuffer = fs.readFileSync(photoPath);
@@ -1333,35 +1329,30 @@ cron.schedule('* * * * *', async () => {
             message: post.message,
             attached_media: [{ media_fbid: photoRes.data.post_id }],
             access_token: pageToken
-          }, { timeout: 30000 });
+          });
           finalPostId = feedRes.data.id;
           try { fs.unlinkSync(photoPath); } catch(e) {}
         } else {
           const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
             message: post.message,
             access_token: pageToken
-          }, { timeout: 30000 });
+          });
           finalPostId = res.data.id;
         }
 
-        // إشعار تليجرام
-        const tgMessage = `✅ تم نشر البوست بنجاح!
-
+        const tgMessage = `تم نشر البوست المجدول بنجاح!
 ${post.message}
 
 https://www.facebook.com/${finalPostId}`;
 
-        if (telegramBot) {
-          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMessage);
-        }
+        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMessage);
 
         post.status = 'published';
         post.post_id = finalPostId;
-        post.published_at = Date.now();
-        console.log(`   ✅ تم النشر بنجاح: ${finalPostId}`);
+        console.log(`تم النشر بنجاح: ${finalPostId}`);
 
       } catch (err) {
-        console.error('   ❌ فشل النشر:', err.response?.data || err.message);
+        console.error('فشل النشر:', err.response?.data || err.message);
         post.status = 'failed';
       }
 
@@ -1369,7 +1360,7 @@ https://www.facebook.com/${finalPostId}`;
     }
   }
 
-  if (!found) console.log('   ℹ️  مفيش بوستات جاهزة للنشر دلوقتي');
+  if (!hasPublished) console.log('مفيش بوستات جاهزة للنشر في الدقيقة دي');
 });
 
 // تنظيف يومي للبوستات المنشورة (كل يوم 00:00)
