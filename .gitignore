@@ -31,6 +31,7 @@ wheels/
 google_service.json
 credentials.json
 token.json
+oauth-token.json
 
 # Logs
 logs/
