@@ -1,0 +1,122 @@
+import requests
+import json
+from datetime import datetime
+
+# -----------------------------
+# CONFIGURATION
+# -----------------------------
+PAGES = [
+    {"id": "PAGE_ID_1", "token": "PAGE_TOKEN_1"},
+    {"id": "PAGE_ID_2", "token": "PAGE_TOKEN_2"}
+]
+
+GROUPS = [
+    {"id": "GROUP_ID_1"},
+    {"id": "GROUP_ID_2"}
+]
+
+DUMMY_POST = "Testing dashboard connection & posting engine"
+
+LOG_FILE = "dashboard_audit_log.txt"
+
+# -----------------------------
+# LOGGING FUNCTION
+# -----------------------------
+def log(message):
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open(LOG_FILE, "a") as f:
+        f.write(f"[{timestamp}] {message}\n")
+    print(f"[{timestamp}] {message}")
+
+# -----------------------------
+# TOKEN VALIDATION
+# -----------------------------
+def validate_tokens():
+    log("Starting token validation...")
+    for page in PAGES:
+        token = page["token"]
+        url = f"https://graph.facebook.com/v17.0/me?access_token={token}"
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if "error" in data:
+                log(f"❌ Token invalid for Page {page['id']}: {data['error']['message']}")
+            else:
+                log(f"✅ Token valid for Page {page['id']}")
+        except Exception as e:
+            log(f"❌ Exception validating token for Page {page['id']}: {str(e)}")
+    log("Token validation completed.\n")
+
+# -----------------------------
+# CHECK PAGE & GROUP RESOURCES
+# -----------------------------
+def check_resources():
+    log("Checking Pages & Groups connectivity...")
+    for page in PAGES:
+        url = f"https://graph.facebook.com/v17.0/{page['id']}?fields=id,name&access_token={page['token']}"
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if "error" in data:
+                log(f"❌ Page {page['id']} not reachable: {data['error']['message']}")
+            else:
+                log(f"✅ Page {page['id']} reachable, name: {data.get('name')}")
+        except Exception as e:
+            log(f"❌ Exception checking Page {page['id']}: {str(e)}")
+    
+    for group in GROUPS:
+        url = f"https://graph.facebook.com/v17.0/{group['id']}?fields=id,name"
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if "error" in data:
+                log(f"❌ Group {group['id']} not reachable: {data['error']['message']}")
+            else:
+                log(f"✅ Group {group['id']} reachable, name: {data.get('name')}")
+        except Exception as e:
+            log(f"❌ Exception checking Group {group['id']}: {str(e)}")
+    log("Resource connectivity check completed.\n")
+
+# -----------------------------
+# TEST POSTING
+# -----------------------------
+def test_posting():
+    log("Testing posting engine...")
+    for page in PAGES:
+        url = f"https://graph.facebook.com/v17.0/{page['id']}/feed"
+        payload = {"message": DUMMY_POST, "access_token": page["token"]}
+        try:
+            response = requests.post(url, data=payload)
+            data = response.json()
+            if "error" in data:
+                log(f"❌ Failed posting to Page {page['id']}: {data['error']['message']}")
+            else:
+                log(f"✅ Dummy post created successfully on Page {page['id']}, Post ID: {data.get('id')}")
+        except Exception as e:
+            log(f"❌ Exception posting to Page {page['id']}: {str(e)}")
+    log("Posting engine test completed.\n")
+
+# -----------------------------
+# DASHBOARD METRICS CHECK (DUMMY)
+# -----------------------------
+def check_dashboard_metrics():
+    log("Checking dashboard metrics & indicators...")
+    # هنا ممكن تضيف أي logic لفحص الـ gauges, charts, و data bindings
+    # مثال dummy:
+    for i in range(1, 6):
+        log(f"✅ Metric {i} checked and linked correctly")
+    log("Dashboard metrics check completed.\n")
+
+# -----------------------------
+# MAIN FUNCTION
+# -----------------------------
+def main():
+    log("===== START DASHBOARD AUDIT =====")
+    validate_tokens()
+    check_resources()
+    test_posting()
+    check_dashboard_metrics()
+    log("===== DASHBOARD AUDIT COMPLETED =====\n")
+
+if __name__ == "__main__":
+    main()
