@@ -24,7 +24,8 @@
     th { background: #00aaff; color: #000; font-weight: 600; }
     button { background: #ff004c; border: none; color: white; border-radius: 8px; cursor: pointer; transition: 0.3s; display: block; margin-left: auto; margin-right: auto; }
     button:hover { background: #ff336d; transform: scale(1.05); }
-    .control-btn { width: 60%; max-width: 160px; padding: 7px 14px; border: 2px solid transparent; font-size: 11px; font-weight: 600; transition: all 0.3s ease; border-radius: 6px; background: linear-gradient(135deg, #ff1744, #d63031); color: #fff; margin: 8px auto 0; display: block; box-shadow: 0 4px 12px rgba(255, 23, 68, 0.25); }
+    .control-buttons-container { display: flex; gap: 12px; justify-content: center; align-items: center; flex-wrap: wrap; padding: 15px; background: rgba(10, 10, 10, 0.8); border-radius: 12px; border: 1px solid #333; }
+    .control-btn { padding: 8px 16px; border: 2px solid transparent; font-size: 11px; font-weight: 600; transition: all 0.3s ease; border-radius: 6px; background: linear-gradient(135deg, #ff1744, #d63031); color: #fff; box-shadow: 0 4px 12px rgba(255, 23, 68, 0.25); cursor: pointer; white-space: nowrap; }
     .control-btn:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 16px rgba(255, 23, 68, 0.4); border-color: #ff5252; background: linear-gradient(135deg, #ff5252, #ff1744); }
     .control-btn:active { transform: translateY(0) scale(0.98); }
     .control-btn.cleanup { background: linear-gradient(135deg, #00ff88, #00d963); box-shadow: 0 4px 12px rgba(0, 255, 136, 0.25); }
@@ -321,16 +322,13 @@
         <canvas id="netChart"></canvas>
     </div>
 
-    <!-- DISK CLEANUP BUTTON -->
-    <div class="card">
-        <h2>Disk Cleanup</h2>
-        <button class="control-btn cleanup" onclick="cleanupDisk()">🗑️ Clean Disk Cache</button>
-    </div>
-
-    <!-- RESTART BUTTON -->
-    <div class="card">
-        <h2>Controls</h2>
-        <button class="control-btn" onclick="restartServer()">🔄 Restart Server</button>
+    <!-- CONTROL BUTTONS -->
+    <div class="card" style="grid-column: span 1;">
+        <h2>Server Controls</h2>
+        <div class="control-buttons-container">
+            <button class="control-btn cleanup" onclick="cleanupDisk()">🗑️ Clean Disk</button>
+            <button class="control-btn" onclick="restartServer()">🔄 Restart</button>
+        </div>
     </div>
 
     <!-- SERVICES TABLE -->
