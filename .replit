@@ -40,6 +40,6 @@ packages = ["glibcLocales", "nettools", "imagemagick", "ffmpeg", "jpegoptim", "p
 [userenv]
 
 [userenv.shared]
-TELEGRAM_CHAT_ID = "1127008149"
+TELEGRAM_CHAT_ID = "1171556072"
 EMAIL_USER = "mohamedcafwat@gmail.com"
 USE_GOOGLE_DRIVE = "false"
