@@ -228,8 +228,31 @@ function updateServices(list) {
 }
 
 function restartServer() {
-    fetch("/api/restart", { method: "POST" });
-    alert("Restart command sent.");
+    const password = prompt("🔒 Enter password to restart server:");
+    
+    if(password === null) {
+        return; // User cancelled
+    }
+    
+    if(password === "") {
+        alert("❌ Password cannot be empty");
+        return;
+    }
+    
+    fetch("/api/restart", { 
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if(data.error) {
+            alert("❌ " + data.error);
+        } else {
+            alert("✅ " + data.message);
+        }
+    })
+    .catch(err => alert("❌ Error: " + err.message));
 }
 
 setInterval(loadStats, 1500);
