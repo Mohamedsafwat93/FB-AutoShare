@@ -141,29 +141,8 @@
                 <input type="text" id="fb-message" placeholder="Enter your message..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                 <input type="text" id="fb-link" placeholder="Optional link..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                 <div style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
-                  <div style="flex: 1; min-width: 100px; position: relative;">
-                    <label for="fb-photo" style="display: block; padding: 6px; background: #1a1a1a; color: #999; border: 1px solid #333; border-radius: 5px; font-size: 11px; cursor: pointer; text-align: center; transition: 0.3s;">
-                      📷 Select Photo
-                    </label>
-                    <input type="file" id="fb-photo" accept="image/*" style="display: none;" onchange="trackMediaUpload('photo')">
-                    <span id="photo-status" style="display: block; font-size: 9px; color: #00ff62; margin-top: 2px;"></span>
-                  </div>
-                  <div style="flex: 1; min-width: 100px; position: relative;">
-                    <label for="fb-video" style="display: block; padding: 6px; background: #1a1a1a; color: #999; border: 1px solid #333; border-radius: 5px; font-size: 11px; cursor: pointer; text-align: center; transition: 0.3s;">
-                      🎥 Select Video
-                    </label>
-                    <input type="file" id="fb-video" accept="video/*" style="display: none;" onchange="trackMediaUpload('video')">
-                    <span id="video-status" style="display: block; font-size: 9px; color: #00ff62; margin-top: 2px;"></span>
-                  </div>
-                </div>
-                <div id="media-progress" style="display: none; margin: 8px 0; padding: 8px; background: #1a1a1a; border-radius: 5px; border-left: 3px solid #00ff62;">
-                  <div style="font-size: 11px; color: #00ff62; margin-bottom: 5px;">📤 Session: <span id="session-id" style="color: #fff; font-weight: bold;"></span></div>
-                  <div style="width: 100%; height: 4px; background: #333; border-radius: 2px; overflow: hidden;">
-                    <div id="upload-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #00ff62, #00ffd5); transition: width 0.3s;"></div>
-                  </div>
-                  <div style="font-size: 9px; color: #888; margin-top: 3px;">
-                    <span id="file-info">Ready...</span>
-                  </div>
+                  <input type="file" id="fb-photo" accept="image/*" style="flex: 1; min-width: 100px; padding: 6px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 5px; font-size: 11px;">
+                  <input type="file" id="fb-video" accept="video/*" style="flex: 1; min-width: 100px; padding: 6px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 5px; font-size: 11px;">
                 </div>
                 <button onclick="postToFacebook()" style="background: #1877f2; color: #fff; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin: 8px 0; font-weight: 600;">📤 Post to Page</button>
                 <p id="fb-status" style="font-size: 11px; color: #888; margin: 5px 0;"></p>
@@ -232,70 +211,6 @@ function gradient(ctx, c1, c2) {
 }
 
 let cpuChart, ramChart, diskChart, netChart;
-let uploadSession = null;
-let mediaTracking = { photo: null, video: null };
-
-// Initialize upload session on page load
-function initializeUploadSession() {
-  const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-  uploadSession = {
-    id: sessionId,
-    timestamp: new Date(),
-    device: navigator.userAgent.split('(')[1]?.split(')')[0] || 'Unknown Device',
-    mediaItems: []
-  };
-  localStorage.setItem('uploadSession', JSON.stringify(uploadSession));
-  document.getElementById('session-id').innerText = sessionId.substr(0, 12) + '...';
-  console.log('✅ Upload Session Initialized:', sessionId);
-}
-
-// Track media file selection
-function trackMediaUpload(type) {
-  const inputId = type === 'photo' ? 'fb-photo' : 'fb-video';
-  const statusId = type === 'photo' ? 'photo-status' : 'video-status';
-  const input = document.getElementById(inputId);
-  const statusEl = document.getElementById(statusId);
-  const file = input.files[0];
-  
-  if(!file) {
-    statusEl.innerText = '';
-    mediaTracking[type] = null;
-    return;
-  }
-  
-  const sizeMB = (file.size / 1024 / 1024).toFixed(2);
-  const maxMB = type === 'video' ? 100 : 50;
-  
-  if(file.size > maxMB * 1024 * 1024) {
-    statusEl.innerText = `❌ File too large (${sizeMB}MB > ${maxMB}MB)`;
-    statusEl.style.color = '#ff3333';
-    input.value = '';
-    mediaTracking[type] = null;
-    return;
-  }
-  
-  mediaTracking[type] = {
-    name: file.name,
-    size: sizeMB,
-    type: file.type,
-    lastModified: new Date(file.lastModified)
-  };
-  
-  statusEl.innerText = `✅ ${file.name} (${sizeMB}MB)`;
-  statusEl.style.color = '#00ff62';
-  
-  document.getElementById('media-progress').style.display = 'block';
-  
-  // Track in session
-  uploadSession.mediaItems.push({
-    type: type,
-    filename: file.name,
-    size: sizeMB,
-    selectedAt: new Date()
-  });
-  localStorage.setItem('uploadSession', JSON.stringify(uploadSession));
-  console.log(`✅ ${type.toUpperCase()} tracked:`, file.name, `(${sizeMB}MB)`);
-}
 
 async function loadStats() {
     try {
@@ -445,8 +360,6 @@ async function postToFacebook() {
     const photoFile = document.getElementById('fb-photo').files[0];
     const videoFile = document.getElementById('fb-video').files[0];
     const statusEl = document.getElementById('fb-status');
-    const progressBar = document.getElementById('upload-progress-bar');
-    const fileInfo = document.getElementById('file-info');
     
     if(!message) {
         statusEl.innerText = '❌ Message cannot be empty';
@@ -454,78 +367,33 @@ async function postToFacebook() {
     }
     
     statusEl.innerText = '⏳ Publishing...';
-    progressBar.style.width = '0%';
     
     try {
         const formData = new FormData();
         formData.append('message', message);
-        formData.append('sessionId', uploadSession.id);
-        
         if(link) formData.append('link', link);
-        if(photoFile) {
-            formData.append('photo', photoFile);
-            fileInfo.innerText = `📷 Photo: ${photoFile.name}`;
-        }
-        if(videoFile) {
-            formData.append('video', videoFile);
-            fileInfo.innerText = `🎥 Video: ${videoFile.name}`;
-        }
-        
-        // Simulate upload progress
-        let progress = 0;
-        const progressInterval = setInterval(() => {
-            if(progress < 90) {
-                progress += Math.random() * 30;
-                progressBar.style.width = Math.min(progress, 90) + '%';
-            }
-        }, 200);
+        if(photoFile) formData.append('photo', photoFile);
+        if(videoFile) formData.append('video', videoFile);
         
         const response = await fetch("/api/facebook/post", {
             method: "POST",
             body: formData
         });
         
-        clearInterval(progressInterval);
-        
         const data = await response.json();
         
         if(data.success) {
-            progress = 100;
-            progressBar.style.width = '100%';
             statusEl.innerText = '✅ ' + data.message;
-            fileInfo.innerText = `✅ Post ID: ${data.postId}`;
-            
-            // Update session
-            uploadSession.postPublished = {
-                postId: data.postId,
-                publishedAt: new Date(),
-                message: message
-            };
-            localStorage.setItem('uploadSession', JSON.stringify(uploadSession));
-            
-            // Clear form after 3 seconds
-            setTimeout(() => {
-                document.getElementById('fb-message').value = '';
-                document.getElementById('fb-link').value = '';
-                document.getElementById('fb-photo').value = '';
-                document.getElementById('fb-video').value = '';
-                document.getElementById('photo-status').innerText = '';
-                document.getElementById('video-status').innerText = '';
-                statusEl.innerText = '';
-                fileInfo.innerText = 'Ready...';
-                progressBar.style.width = '0%';
-                mediaTracking = { photo: null, video: null };
-                initializeUploadSession();
-            }, 3000);
+            document.getElementById('fb-message').value = '';
+            document.getElementById('fb-link').value = '';
+            document.getElementById('fb-photo').value = '';
+            document.getElementById('fb-video').value = '';
+            setTimeout(() => { statusEl.innerText = ''; }, 5000);
         } else {
-            progressBar.style.width = '0%';
             statusEl.innerText = '❌ ' + (data.error || 'Failed to post');
-            fileInfo.innerText = data.error || 'Upload failed';
         }
     } catch(err) {
-        progressBar.style.width = '0%';
         statusEl.innerText = '❌ Error: ' + err.message;
-        fileInfo.innerText = err.message;
     }
 }
 
@@ -535,7 +403,7 @@ async function autoSyncGroups() {
     statusEl.innerHTML = '⏳ Syncing your Facebook groups...';
     
     try {
-        const response = await fetch("/api/facebook/auto-groups");
+        const response = await fetch('/api/facebook/auto-groups');
         const data = await response.json();
         
         if(!response.ok) {
@@ -637,7 +505,7 @@ async function postToSelectedGroup() {
         if(photoFile) formData.append('photo', photoFile);
         if(videoFile) formData.append('video', videoFile);
         
-        const response = await fetch("/api/facebook/group-post", {
+        const response = await fetch('/api/facebook/group-post', {
             method: 'POST',
             body: formData
         });
@@ -668,7 +536,7 @@ async function validateTokens() {
     statusEl.innerText = '⏳ Checking tokens...';
     
     try {
-        const response = await fetch("/api/facebook/validate-token");
+        const response = await fetch('/api/facebook/validate-token');
         const data = await response.json();
         
         let statusText = '';
@@ -723,17 +591,10 @@ function postToGroup(groupId, groupName) {
     .catch(err => alert('❌ Error: ' + err.message));
 }
 
-// Startup: Initialize session and load stats
-document.addEventListener('DOMContentLoaded', () => {
-  initializeUploadSession();
-  console.log('📱 Device Info:', navigator.userAgent);
-  console.log('🌐 Platform:', navigator.platform);
-});
-
 // Load page profile picture on startup
 async function loadPageProfilePicture() {
   try {
-    const response = await fetch("/api/facebook/page-info");
+    const response = await fetch('/api/facebook/page-info');
     const data = await response.json();
     
     if(data.success && data.page.picture) {
