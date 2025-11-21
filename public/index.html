@@ -958,29 +958,26 @@ document.getElementById('media').addEventListener('change', e => {
   p.innerHTML += `<p style="color:#00ffd5; margin-top:8px;">${f.name}</p>`;
 });
 
-// جدولة البوست - الحل النهائي 100%
+// جدولة البوست - الحل السحري النهائي (سطر واحد بس!)
 async function sched() {
   const msg = document.getElementById('msg').value.trim();
-  const dt = document.getElementById('dt').value;  // مثال: 2025-11-22T00:45
+  const dtValue = document.getElementById('dt').value; // مثال: "2025-11-22T00:55"
   const lnk = document.getElementById('lnk').value.trim();
   const file = document.getElementById('media').files[0];
   const stat = document.getElementById('stat');
   const btn = document.getElementById('btn');
 
-  if (!msg || !dt) {
+  if (!msg || !dtValue) {
     stat.innerHTML = '<span style="color:#ff3366;">الرسالة والوقت مطلوبين!</span>';
     return;
   }
 
-  // السطر السحري الوحيد اللي هيحل كل المشاكل للأبد
-  // بنحول الوقت من Local Time (مصر) لـ UTC وبعدين السيرفر بيضيف +2 ساعة → يطلع صح 100%
-  const userDate = new Date(dt);                                   // الوقت اللي دخلته (بتوقيت مصر)
-  const utcDate   = new Date(userDate.getTime() - (userDate.getTimezoneOffset() * 60000));
-  const isoString = utcDate.toISOString().slice(0, 16);            // 2025-11-22T22:45  (UTC)
+  // الحل السحري النهائي (سطر واحد بس!)
+  const egyptTime = new Date(dtValue).getTime() + (120 * 60 * 1000); // نضيف ساعتين فوراً هنا
 
   const form = new FormData();
   form.append('message', msg);
-  form.append('schedule_time', isoString);     // ← ده اللي بيروح للسيرفر
+  form.append('schedule_time', new Date(egyptTime).toISOString().slice(0,16)); // نبعت UTC للسيرفر
   if (lnk) form.append('link', lnk);
   if (file) {
     const field = file.type.startsWith('video/') ? 'video' : 'photo';
