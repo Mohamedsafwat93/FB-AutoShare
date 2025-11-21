@@ -971,7 +971,9 @@ async function sched() {
 
   const form = new FormData();
   form.append('message', msg);
-  form.append('schedule_time', dt);
+  // الحل السحري: نضيف Z في النهاية عشان المتصفح يعامل الوقت كـ UTC
+  // وبعدين السيرفر بيضيف +2 ساعة → يطلع مصر بالظبط
+  form.append('schedule_time', dt + 'Z');
   if (lnk) form.append('link', lnk);
   if (file) {
     const field = file.type.startsWith('video/') ? 'video' : 'photo';
