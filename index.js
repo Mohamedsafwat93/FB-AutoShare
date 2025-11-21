@@ -1413,6 +1413,32 @@ cron.schedule('0 0 * * *', () => {
   console.log(`[CLEANUP] Removed ${before - scheduledPosts.length} published posts`);
 });
 
+// ====================== APIs: عرض وتعديل وحذف البوستات المجدولة ======================
+app.get('/api/get-scheduled-posts', (req, res) => {
+  res.json(scheduledPosts);
+});
+
+app.post('/api/delete-post', express.json(), (req, res) => {
+  const { id } = req.body;
+  scheduledPosts = scheduledPosts.filter(p => p.id !== id);
+  saveScheduledPosts();
+  console.log(`[DELETE] Post ${id} removed`);
+  res.json({ success: true });
+});
+
+app.post('/api/update-post-time', express.json(), (req, res) => {
+  const { id, schedule_time } = req.body;
+  const post = scheduledPosts.find(p => p.id === id);
+  if (post) {
+    post.schedule_time = schedule_time;
+    saveScheduledPosts();
+    console.log(`[UPDATE] Post ${id} time updated to ${new Date(schedule_time).toLocaleString('en-GB')}`);
+    res.json({ success: true });
+  } else {
+    res.status(404).json({ error: 'Post not found' });
+  }
+});
+
 // Now serve static files (after API routes)
 app.use(express.static(path.join(__dirname, 'public')));
 
