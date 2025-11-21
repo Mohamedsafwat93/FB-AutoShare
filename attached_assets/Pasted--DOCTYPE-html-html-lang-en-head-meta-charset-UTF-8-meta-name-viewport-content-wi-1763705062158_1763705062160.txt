@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facebook Automation Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: sans-serif; background: #1f2937; color: #f9fafb; }
+  .card { background: #374151; padding: 1rem; border-radius: 0.5rem; margin: 0.5rem; }
+  .progress-bar { background: #10b981; height: 10px; border-radius: 5px; }
+  footer { text-align: center; margin-top: 2rem; font-size: 0.85rem; color: #9ca3af; }
+</style>
+</head>
+<body class="p-4">
+<h1 class="text-3xl mb-4 font-bold">🚀 Facebook Automation Dashboard</h1>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <div class="card">
+    <h2 class="text-xl font-semibold">📊 CPU</h2>
+    <canvas id="cpuChart" height="100"></canvas>
+    <p id="cpuInfo"></p>
+  </div>
+  <div class="card">
+    <h2 class="text-xl font-semibold">💾 RAM</h2>
+    <canvas id="ramChart" height="100"></canvas>
+    <p id="ramInfo"></p>
+  </div>
+  <div class="card">
+    <h2 class="text-xl font-semibold">🖴 Disk</h2>
+    <canvas id="diskChart" height="100"></canvas>
+    <p id="diskInfo"></p>
+  </div>
+</div>
+
+<div class="card mt-4">
+  <h2 class="text-xl font-semibold">⚡ Controls</h2>
+  <button id="refreshBtn" class="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600">Refresh Stats</button>
+</div>
+
+<footer>Made with ❤️ By Eng. Mohammed Safwat</footer>
+
+<script>
+async function fetchStats() {
+  const res = await fetch('/api/stats');
+  const data = await res.json();
+  return data;
+}
+
+let cpuChart, ramChart, diskChart;
+
+async function updateCharts() {
+  const stats = await fetchStats();
+
+  // CPU
+  const cpuUsage = stats.cpu.usage.toFixed(2);
+  document.getElementById('cpuInfo').innerText = `Model: ${stats.cpu.model}, Cores: ${stats.cpu.cores}, Usage: ${cpuUsage}%`;
+  if(cpuChart) cpuChart.destroy();
+  cpuChart = new Chart(document.getElementById('cpuChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Used', 'Free'], datasets: [{ data: [cpuUsage, 100-cpuUsage], backgroundColor: ['#f87171','#4ade80'] }] }
+  });
+
+  // RAM
+  const ramUsed = (stats.ram.used/1024/1024/1024).toFixed(2);
+  const ramFree = (stats.ram.free/1024/1024/1024).toFixed(2);
+  const ramTotal = (stats.ram.total/1024/1024/1024).toFixed(2);
+  document.getElementById('ramInfo').innerText = `Total: ${ramTotal}GB, Used: ${ramUsed}GB, Free: ${ramFree}GB`;
+  if(ramChart) ramChart.destroy();
+  ramChart = new Chart(document.getElementById('ramChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Used', 'Free'], datasets: [{ data: [ramUsed, ramFree], backgroundColor: ['#fbbf24','#34d399'] }] }
+  });
+
+  // Disk
+  const disk = stats.disk[0];
+  const diskUsed = (disk.used/1024/1024/1024).toFixed(2);
+  const diskFree = (disk.free/1024/1024/1024).toFixed(2);
+  const diskTotal = (disk.size/1024/1024/1024).toFixed(2);
+  document.getElementById('diskInfo').innerText = `Total: ${diskTotal}GB, Used: ${diskUsed}GB, Free: ${diskFree}GB`;
+  if(diskChart) diskChart.destroy();
+  diskChart = new Chart(document.getElementById('diskChart').getContext('2d'), {
+    type: 'doughnut',
+    data: { labels: ['Used', 'Free'], datasets: [{ data: [diskUsed, diskFree], backgroundColor: ['#f87171','#4ade80'] }] }
+  });
+}
+
+document.getElementById('refreshBtn').addEventListener('click', updateCharts);
+
+// تحديث تلقائي كل ثانيتين
+setInterval(updateCharts, 2000);
+updateCharts();
+</script>
+</body>
+</html>
