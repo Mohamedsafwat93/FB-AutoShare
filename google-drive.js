@@ -8,7 +8,6 @@ let authenticated = false;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
 const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
-const TOKEN_PATH = path.join(__dirname, 'token.json');
 
 // Initialize Google Drive service
 async function initializeGoogleDrive() {
@@ -19,22 +18,35 @@ async function initializeGoogleDrive() {
     }
 
     const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH));
-    const { client_secret, client_id, redirect_uris } = credentials.installed;
-
-    const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-
-    // Check if token exists
-    let token = null;
-    if (fs.existsSync(TOKEN_PATH)) {
-      token = JSON.parse(fs.readFileSync(TOKEN_PATH));
-      oauth2Client.setCredentials(token);
+    
+    // Check if it's a service account or OAuth credentials
+    if (credentials.type === 'service_account') {
+      // Service account authentication
+      const auth = new google.auth.GoogleAuth({
+        keyFile: CREDENTIALS_PATH,
+        scopes: SCOPES
+      });
+      driveService = google.drive({ version: 'v3', auth });
+    } else if (credentials.installed) {
+      // OAuth authentication
+      const { client_secret, client_id, redirect_uris } = credentials.installed;
+      const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
+      const TOKEN_PATH = path.join(__dirname, 'token.json');
+      
+      if (fs.existsSync(TOKEN_PATH)) {
+        const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
+        oauth2Client.setCredentials(token);
+      } else {
+        console.log('⚠️ Google Drive: token.json not found - OAuth authentication required');
+        console.log('   Run: node setup-google-drive.js');
+        return false;
+      }
+      driveService = google.drive({ version: 'v3', auth: oauth2Client });
     } else {
-      console.log('⚠️ Google Drive: token.json not found - OAuth authentication required');
-      console.log('   Run: node setup-google-drive.js');
+      console.log('ℹ️ Google Drive: Unknown credentials format');
       return false;
     }
 
-    driveService = google.drive({ version: 'v3', auth: oauth2Client });
     authenticated = true;
     console.log('✅ Google Drive authenticated');
     return true;
