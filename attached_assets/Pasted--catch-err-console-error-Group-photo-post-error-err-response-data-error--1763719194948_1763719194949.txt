@@ -1,0 +1,69 @@
+      } catch(err) {
+        console.error('❌ Group photo post error:', err.response?.data?.error?.message || err.message);
+        return res.status(500).json({error: err.response?.data?.error?.message || err.message});
+      }
+    }
+
+    // If video exists
+    if(videoFile) {
+      const videoPath = path.join(uploadDir, videoFile.filename);
+      console.log(`🎥 Video: ${videoFile.filename} (${(videoFile.size/1024).toFixed(2)}KB)`);
+
+      const videoForm = new FormData();
+      videoForm.append('message', postData.message);
+      videoForm.append('source', fs.createReadStream(videoPath), {
+        filename: videoFile.filename,
+        contentType: videoFile.mimetype
+      });
+      if(link) {
+        videoForm.append('link', link);
+      }
+      videoForm.append('access_token', userToken);
+
+      console.log(`📤 Creating post on group ${group_id}/feed with video + message...`);
+
+      try {
+        const response = await axios.post(
+          `https://graph.facebook.com/v18.0/${group_id}/feed`,
+          videoForm,
+          { headers: videoForm.getHeaders() }
+        );
+
+        console.log('✅ Group video post successful:', response.data.id);
+
+        return res.json({
+          success: true,
+          message: '✅ Posted to group with video!',
+          postId: response.data.id
+        });
+      } catch(err) {
+        console.error('❌ Group video post error:', err.response?.data?.error?.message || err.message);
+        return res.status(500).json({error: err.response?.data?.error?.message || err.message});
+      }
+    }
+
+    // Text-only post to group
+    console.log(`📤 Creating text-only post on group ${group_id}/feed...`);
+    try {
+      const response = await axios.post(
+        `https://graph.facebook.com/v18.0/${group_id}/feed`,
+        postData
+      );
+
+      console.log('✅ Group text-only post successful:', response.data.id);
+
+      return res.json({
+        success: true,
+        message: '✅ Text-only post published to group!',
+        postId: response.data.id
+      });
+    } catch(err) {
+      console.error('❌ Group text post error:', err.response?.data?.error?.message || err.message);
+      return res.status(500).json({error: err.response?.data?.error?.message || err.message});
+    }
+
+  } catch(err) {
+    console.error('❌ Unexpected group-post error:', err.message);
+    res.status(500).json({error: err.message});
+  }
+});
