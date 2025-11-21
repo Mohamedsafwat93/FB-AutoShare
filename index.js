@@ -50,6 +50,23 @@ function saveScheduledPosts() {
   fs.writeFileSync(DATA_FILE, JSON.stringify(scheduledPosts, null, 2));
 }
 
+// دالة إرسال إشعار جيميل
+async function sendGmailNotification(subject, text) {
+  if (!transporter || !process.env.EMAIL_USER) return;
+  try {
+    await transporter.sendMail({
+      from: `"FB Scheduler" <${process.env.EMAIL_USER}>`,
+      to: process.env.EMAIL_USER,
+      subject: subject,
+      text: text,
+      html: `<p>${text.replace(/\n/g, '<br>')}</p>`
+    });
+    console.log(`[GMAIL] Notification sent: ${subject}`);
+  } catch (err) {
+    console.error('[GMAIL] Failed to send:', err.message);
+  }
+}
+
 // Start Health Check + Keep-Alive + Cleanup System
 require('./health-check');
 
@@ -1352,9 +1369,12 @@ cron.schedule('* * * * *', async () => {
           finalPostId = res.data.id;
         }
 
-        // إشعار تليجرام
-        const tgMsg = `Post published successfully!\n\n${post.message.substring(0, 100)}...\n\nhttps://facebook.com/${finalPostId}`;
-        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMsg);
+        // إشعار تليجرام و جيميل
+        const postUrl = `https://facebook.com/${finalPostId}`;
+        const successMsg = `Post published successfully!\n\n${post.message.substring(0, 150)}...\n\nLink: ${postUrl}`;
+        
+        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, successMsg);
+        await sendGmailNotification('✅ Post Published Successfully', successMsg);
 
         post.status = 'published';
         post.post_id = finalPostId;
@@ -1362,13 +1382,15 @@ cron.schedule('* * * * *', async () => {
         console.log(`[SUCCESS] Post published: ${finalPostId}`);
 
       } catch (err) {
+        const errMsg = `Failed to publish scheduled post!\n\nError: ${err.response?.data?.error?.message || err.message}`;
         console.error('[ERROR] Failed to publish post:', err.response?.data || err.message);
         post.status = 'failed';
         post.error = err.response?.data?.error?.message || err.message;
 
         if (telegramBot) {
-          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, `Failed to publish scheduled post!\nError: ${err.response?.data?.error?.message || err.message}`);
+          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, errMsg);
         }
+        await sendGmailNotification('❌ Post Publish Failed', errMsg);
       }
 
       saveScheduledPosts();
