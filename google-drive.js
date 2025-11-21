@@ -88,19 +88,28 @@ async function uploadToGoogleDrive(fileBuffer, fileName, folderId = null) {
   }
 
   try {
+    // Validate buffer
+    if (!Buffer.isBuffer(fileBuffer)) {
+      throw new Error('File must be a Buffer');
+    }
+
     const fileMetadata = { name: fileName };
     if (folderId) {
       fileMetadata.parents = [folderId];
     }
 
-    const media = {
-      mimeType: 'application/octet-stream',
-      body: Readable.from(fileBuffer)
-    };
+    // Create a readable stream from buffer
+    const stream = Readable.from([fileBuffer]);
 
     const response = await driveService.files.create({
-      resource: fileMetadata,
-      media: media,
+      requestBody: {
+        name: fileName,
+        ...(folderId && { parents: [folderId] })
+      },
+      media: {
+        mimeType: 'application/octet-stream',
+        body: stream
+      },
       fields: 'id, name, webViewLink, size'
     });
 
