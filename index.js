@@ -1294,8 +1294,8 @@ app.post('/api/schedule-post', upload.fields([
       return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
     }
 
-    // +2 ساعة لتعويض فرق التوقيت (سيرفر UTC وإحنا في مصر)
-    const scheduledTime = new Date(schedule_time).getTime() + (2 * 60 * 60 * 1000);
+    // خلّصنا… مفيش +2 ساعة تاني أبدًا
+    const scheduledTime = new Date(schedule_time).getTime();
 
     const newPost = {
       id: Date.now() + Math.random().toString(36).substr(2, 9),
