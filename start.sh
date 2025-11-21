@@ -16,8 +16,8 @@ VNC_PID=$!
 
 sleep 2
 
-# Start Node.js server
-echo "Starting Node.js server on port 5000..."
+# Start Node.js server with Health Check Cron
+echo "Starting Node.js server on port 5000 with Health Check..."
 node /home/runner/workspace/index.js
 
 # Cleanup
