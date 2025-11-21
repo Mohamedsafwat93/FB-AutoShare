@@ -29,22 +29,59 @@ async function initializeBuckets() {
     }
 }
 
-// 🖼️ Process Image with Sharp
+// 🖼️ Process Image with Sharp - Enhanced with error handling
 async function processImage(imageBuffer) {
     try {
-        const thumbnail = await sharp(imageBuffer)
-            .resize(300, 300)
-            .jpeg({ quality: 80 })
-            .toBuffer();
-            
-        const optimized = await sharp(imageBuffer)
-            .resize(1200, 1200, { fit: 'inside' })
-            .jpeg({ quality: 85 })
-            .toBuffer();
-            
-        return { thumbnail, optimized };
+        // Validate buffer
+        if (!Buffer.isBuffer(imageBuffer) || imageBuffer.length === 0) {
+            throw new Error('Invalid image buffer');
+        }
+
+        // Detect image format first
+        let image = sharp(imageBuffer);
+        const metadata = await image.metadata().catch(() => ({}));
+        
+        if (!metadata.format) {
+            throw new Error('Unrecognized image format');
+        }
+
+        // Create thumbnail with fallback
+        let thumbnail;
+        try {
+            thumbnail = await sharp(imageBuffer)
+                .resize(300, 300, { fit: 'cover' })
+                .toFormat('jpeg', { quality: 80 })
+                .toBuffer()
+                .catch(() => imageBuffer);
+        } catch (e) {
+            console.log(`Thumbnail generation failed: ${e.message}, using original`);
+            thumbnail = imageBuffer;
+        }
+
+        // Create optimized version with fallback
+        let optimized;
+        try {
+            optimized = await sharp(imageBuffer)
+                .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+                .toFormat('jpeg', { quality: 85 })
+                .toBuffer()
+                .catch(() => imageBuffer);
+        } catch (e) {
+            console.log(`Optimization failed: ${e.message}, using original`);
+            optimized = imageBuffer;
+        }
+
+        return { 
+            thumbnail: thumbnail || imageBuffer, 
+            optimized: optimized || imageBuffer 
+        };
     } catch (error) {
-        throw new Error('Image processing failed: ' + error.message);
+        console.log(`Image processing warning: ${error.message} - will upload original`);
+        // Return the original buffer instead of throwing
+        return { 
+            thumbnail: imageBuffer, 
+            optimized: imageBuffer 
+        };
     }
 }
 
@@ -88,63 +125,97 @@ async function integratedUpload(file, options = {}) {
         const results = {
             original: null,
             processed: null,
-            backup: null
+            backup: null,
+            processingNote: null
         };
 
         const fileName = file.originalname;
-        const fileType = file.mimetype.split('/')[0];
+        const fileType = file.mimetype ? file.mimetype.split('/')[0] : 'unknown';
         
         let targetBucket = 'facebook-posts';
         if (fileType === 'image') targetBucket = 'facebook-images';
         if (fileType === 'video') targetBucket = 'facebook-videos';
+
+        // Validate file buffer
+        if (!file.buffer || file.buffer.length === 0) {
+            return {
+                success: false,
+                error: 'File buffer is empty'
+            };
+        }
 
         // 📥 Upload original file
         results.original = await uploadToMinIO(
             file.buffer, 
             targetBucket, 
             fileName,
-            { 'Content-Type': file.mimetype }
+            { 'Content-Type': file.mimetype || 'application/octet-stream' }
         );
 
         // 🖼️ Process images if applicable
         if (fileType === 'image' && compressImages) {
-            const processedImages = await processImage(file.buffer);
-            
-            results.processed = await uploadToMinIO(
-                processedImages.optimized,
-                targetBucket,
-                `optimized-${fileName}`,
-                { 'Content-Type': 'image/jpeg' }
-            );
+            try {
+                const processedImages = await processImage(file.buffer);
+                
+                if (processedImages && processedImages.optimized) {
+                    try {
+                        results.processed = await uploadToMinIO(
+                            processedImages.optimized,
+                            targetBucket,
+                            `optimized-${fileName}`,
+                            { 'Content-Type': 'image/jpeg' }
+                        );
+                    } catch (e) {
+                        console.log(`Optimized upload failed: ${e.message}`);
+                        results.processingNote = 'Optimized version failed, but original uploaded successfully';
+                    }
 
-            await uploadToMinIO(
-                processedImages.thumbnail,
-                targetBucket,
-                `thumbnail-${fileName}`,
-                { 'Content-Type': 'image/jpeg' }
-            );
+                    try {
+                        if (processedImages.thumbnail && processedImages.thumbnail !== processedImages.optimized) {
+                            await uploadToMinIO(
+                                processedImages.thumbnail,
+                                targetBucket,
+                                `thumbnail-${fileName}`,
+                                { 'Content-Type': 'image/jpeg' }
+                            );
+                        }
+                    } catch (e) {
+                        console.log(`Thumbnail upload failed: ${e.message}`);
+                    }
+                }
+            } catch (error) {
+                console.log(`Image processing error: ${error.message}`);
+                results.processingNote = 'Image processing skipped, but original file uploaded';
+            }
         }
 
         // 💾 Create backup
         if (createBackup) {
-            results.backup = await uploadToMinIO(
-                file.buffer,
-                'backups',
-                `backup-${fileName}`,
-                { 'Content-Type': file.mimetype }
-            );
+            try {
+                results.backup = await uploadToMinIO(
+                    file.buffer,
+                    'backups',
+                    `backup-${fileName}`,
+                    { 'Content-Type': file.mimetype || 'application/octet-stream' }
+                );
+            } catch (e) {
+                console.log(`Backup creation failed: ${e.message}`);
+                results.processingNote = (results.processingNote || '') + ' (backup failed)';
+            }
         }
 
         return {
             success: true,
-            message: '✅ Upload and storage successful',
-            results: results
+            message: '✅ Upload successful',
+            results: results,
+            note: results.processingNote ? `⚠️ ${results.processingNote}` : null
         };
 
     } catch (error) {
         return {
             success: false,
-            error: 'Integrated upload failed: ' + error.message
+            error: 'Upload failed: ' + error.message,
+            suggestion: 'Please try uploading a different file or check your file format'
         };
     }
 }
