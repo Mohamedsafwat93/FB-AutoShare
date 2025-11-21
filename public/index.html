@@ -562,6 +562,29 @@ async function loadStats() {
 function updateChart(id, label, value, instance, saveFn, c1, c2) {
     const ctx = document.getElementById(id).getContext("2d");
 
+    const chartPlugin = {
+        id: 'textCenter',
+        beforeDatasetsDraw(chart) {
+            const { ctx, chartArea: { left, top, width, height } } = chart;
+            ctx.save();
+            
+            const centerX = left + width / 2;
+            const centerY = top + height / 2;
+            
+            ctx.font = 'bold 36px Arial';
+            ctx.fillStyle = '#00ffd5';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.shadowColor = 'rgba(0, 255, 213, 0.5)';
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetX = 0;
+            ctx.shadowOffsetY = 0;
+            
+            ctx.fillText(Math.round(value) + '%', centerX, centerY);
+            ctx.restore();
+        }
+    };
+
     if (!instance) {
         saveFn(new Chart(ctx, {
             type: "doughnut",
@@ -575,6 +598,8 @@ function updateChart(id, label, value, instance, saveFn, c1, c2) {
             },
             options: {
                 cutout: "70%",
+                responsive: true,
+                maintainAspectRatio: true,
                 plugins: {
                     tooltip: { enabled: true },
                     title: {
@@ -582,9 +607,11 @@ function updateChart(id, label, value, instance, saveFn, c1, c2) {
                         text: label,
                         color: "#fff",
                         font: { size: 18 }
-                    }
+                    },
+                    textCenter: {}
                 }
-            }
+            },
+            plugins: [chartPlugin]
         }));
     } else {
         instance.data.datasets[0].data = [value, 100 - value];
