@@ -143,14 +143,22 @@
 
             <!-- Groups Section -->
             <div>
-                <button class="dropdown-toggle" onclick="toggleGroupsDropdown()">👥 Facebook Groups Status</button>
+                <button class="dropdown-toggle" onclick="toggleGroupsDropdown()">👥 Post to Facebook Groups</button>
                 <div id="groups-dropdown" class="dropdown-content">
-                    <textarea id="group-ids" placeholder="Enter Group IDs (comma-separated or one per line)&#10;Example: 123456789, 987654321" style="width: 100%; height: 60px; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-family: monospace; font-size: 11px; box-sizing: border-box;"></textarea>
-                    <button onclick="verifyGroups()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer;">Verify Groups</button>
-                    <div id="groups-container" style="margin-top: 10px; max-height: 250px; overflow-y: auto;">
-                        <p style="color: #888; text-align: center; font-size: 12px;">Paste group IDs and click Verify</p>
+                    <button onclick="autoSyncGroups()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">🔄 Auto-Sync Groups</button>
+                    
+                    <select id="groups-select" style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
+                        <option value="">Select a group to post to...</option>
+                    </select>
+                    
+                    <textarea id="group-message" placeholder="Enter message for group..." style="width: 100%; height: 60px; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;"></textarea>
+                    
+                    <button onclick="postToSelectedGroup()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px;">📤 Post to Selected Group</button>
+                    
+                    <div id="groups-status" style="margin-top: 10px; max-height: 250px; overflow-y: auto;">
+                        <p style="color: #888; text-align: center; font-size: 12px;">Click "Auto-Sync Groups" to load your groups</p>
                     </div>
-                    <p id="group-status" style="font-size: 11px; color: #888; margin-top: 8px;"></p>
+                    <p id="group-post-status" style="font-size: 11px; color: #888; margin-top: 8px;"></p>
                 </div>
             </div>
         </div>
@@ -369,62 +377,95 @@ async function postToFacebook() {
     }
 }
 
-async function verifyGroups() {
-    const groupIdsText = document.getElementById('group-ids').value.trim();
-    const container = document.getElementById('groups-container');
-    const statusEl = document.getElementById('group-status');
-    
-    if(!groupIdsText) {
-        statusEl.innerText = '❌ Please enter at least one group ID';
-        return;
-    }
-
-    // Parse group IDs (comma or newline separated)
-    const groupIds = groupIdsText.split(/[,\n]/).map(id => id.trim()).filter(id => id);
-    
-    if(groupIds.length === 0) {
-        statusEl.innerText = '❌ No valid group IDs found';
-        return;
-    }
-
-    statusEl.innerText = '⏳ Verifying ' + groupIds.length + ' group(s)...';
-    container.innerHTML = '';
+async function autoSyncGroups() {
+    const statusEl = document.getElementById('groups-status');
+    const selectEl = document.getElementById('groups-select');
+    statusEl.innerHTML = '⏳ Syncing your Facebook groups...';
     
     try {
-        const response = await fetch("/api/facebook/groups-verify", {
-            method: "POST",
+        const response = await fetch('/api/facebook/auto-groups');
+        const data = await response.json();
+        
+        if(!response.ok) {
+            statusEl.innerHTML = '❌ ' + (data.error || 'Failed to sync groups');
+            return;
+        }
+        
+        if(data.groups && data.groups.length > 0) {
+            // Populate dropdown
+            selectEl.innerHTML = '<option value="">Select a group to post to...</option>';
+            data.groups.forEach(group => {
+                const option = document.createElement('option');
+                option.value = group.id;
+                option.text = group.name + ' (' + (group.member_count || 0) + ' members)';
+                option.dataset.name = group.name;
+                selectEl.appendChild(option);
+            });
+            
+            // Update status
+            statusEl.innerHTML = `<p style="color: #00ff62;">✅ Synced ${data.total} groups successfully!</p>`;
+            
+            // Show group list
+            let html = '<div style="margin-top: 10px;">';
+            data.groups.forEach(group => {
+                html += `<div style="background: #1a1a1a; padding: 8px; margin: 5px 0; border-radius: 5px; border-left: 3px solid #1877f2; font-size: 11px;">
+                    <strong style="color: #00ffd5;">${group.name}</strong><br>
+                    <small style="color: #888;">Members: ${group.member_count || 'N/A'} | Privacy: ${group.privacy || 'N/A'}</small>
+                </div>`;
+            });
+            html += '</div>';
+            statusEl.innerHTML = `<p style="color: #00ff62;">✅ Synced ${data.total} groups! Select one above to post.</p>` + html;
+        } else {
+            statusEl.innerHTML = '❌ No groups found. Make sure you are a member of at least one Facebook group.';
+        }
+    } catch(err) {
+        statusEl.innerHTML = '❌ Error: ' + err.message;
+        console.error('Sync error:', err);
+    }
+}
+
+async function postToSelectedGroup() {
+    const selectEl = document.getElementById('groups-select');
+    const groupId = selectEl.value;
+    const message = document.getElementById('group-message').value.trim();
+    const statusEl = document.getElementById('group-post-status');
+    
+    if(!groupId) {
+        statusEl.innerText = '❌ Please select a group';
+        return;
+    }
+    
+    if(!message) {
+        statusEl.innerText = '❌ Please enter a message';
+        return;
+    }
+    
+    const groupName = selectEl.options[selectEl.selectedIndex].text;
+    statusEl.innerText = '⏳ Posting to ' + groupName + '...';
+    
+    try {
+        const response = await fetch('/api/facebook/group-post', {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ group_ids: groupIds })
+            body: JSON.stringify({
+                group_id: groupId,
+                message: message
+            })
         });
         
         const data = await response.json();
         
-        if(data.groups && data.groups.length > 0) {
-            let html = `<p style="color: #00ffd5; margin-bottom: 15px;">✅ Verified ${data.valid_groups} of ${data.total_requested} groups:</p>`;
-            
-            data.groups.forEach(group => {
-                html += `
-                <div style="background: #1a1a1a; padding: 12px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #00ff62;">
-                    <strong style="color: #00ffd5;">${group.name}</strong><br>
-                    <small style="color: #888;">ID: ${group.id} | Members: ${group.member_count || 'N/A'}</small><br>
-                    <button onclick="postToGroup('${group.id}', '${group.name}');" style="background: #1877f2; color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-top: 8px;">📤 Post to this group</button>
-                </div>
-                `;
-            });
-            
-            if(data.invalid && data.invalid.length > 0) {
-                html += `<p style="color: #ff6b6b; margin-top: 15px;">⚠️ ${data.invalid.length} group(s) could not be verified - check IDs</p>`;
-            }
-            
-            container.innerHTML = html;
-            statusEl.innerText = '✅ Groups verified successfully!';
+        if(!response.ok || data.error) {
+            statusEl.innerText = '❌ ' + (data.error || 'Failed to post');
+            console.error('Post error:', data);
         } else {
-            statusEl.innerText = '❌ No valid groups found. Check your group IDs.';
-            container.innerHTML = '<p style="color: #ff6b6b;">No groups to display</p>';
+            statusEl.innerText = '✅ Posted successfully to ' + groupName + '!';
+            document.getElementById('group-message').value = '';
+            setTimeout(() => { statusEl.innerText = ''; }, 3000);
         }
     } catch(err) {
         statusEl.innerText = '❌ Error: ' + err.message;
-        container.innerHTML = '';
+        console.error('Fetch error:', err);
     }
 }
 

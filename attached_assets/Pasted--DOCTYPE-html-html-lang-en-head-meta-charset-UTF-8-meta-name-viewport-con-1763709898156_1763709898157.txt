@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facebook Groups Sync</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+
+    <div class="card w-full max-w-lg mx-auto bg-white p-6 shadow-lg">
+        <h2 class="text-xl font-bold mb-4">📃 Select Your Facebook Groups</h2>
+
+        <div class="dropdown mb-4">
+            <button id="dropdownButton" class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg text-left">
+                Select Group
+            </button>
+            <ul id="groupList" class="hidden bg-white shadow-lg rounded-lg absolute w-full max-h-60 overflow-y-auto z-10 mt-2">
+                <!-- Groups will be dynamically inserted here -->
+            </ul>
+        </div>
+
+        <button onclick="syncGroups()" class="w-full py-2 px-4 bg-green-600 text-white rounded-lg mt-4">Sync Groups</button>
+    </div>
+
+    <script>
+        let groups = [];
+
+        // Function to fetch the groups from the server
+        async function fetchGroups() {
+            try {
+                const response = await fetch('/sync-groups');
+                const data = await response.json();
+                groups = data;
+                updateDropdown();
+            } catch (error) {
+                console.error('Error fetching groups:', error);
+            }
+        }
+
+        // Function to update the dropdown list
+        function updateDropdown() {
+            const groupList = document.getElementById('groupList');
+            groupList.innerHTML = '';  // Clear any existing items
+
+            groups.forEach(group => {
+                const li = document.createElement('li');
+                li.className = 'py-2 px-4 hover:bg-blue-100 cursor-pointer';
+                li.innerText = group.name;
+                li.onclick = () => selectGroup(group.name);
+                groupList.appendChild(li);
+            });
+        }
+
+        // Function to handle group selection
+        function selectGroup(groupName) {
+            const dropdownButton = document.getElementById('dropdownButton');
+            dropdownButton.textContent = groupName;
+            document.getElementById('groupList').classList.add('hidden');
+        }
+
+        // Toggle dropdown visibility when the button is clicked
+        document.getElementById('dropdownButton').onclick = function() {
+            const groupList = document.getElementById('groupList');
+            groupList.classList.toggle('hidden');
+        }
+
+        // Call the server to sync groups
+        function syncGroups() {
+            fetchGroups();
+        }
+
+        // Automatically fetch groups on page load
+        window.onload = function() {
+            fetchGroups();
+        }
+    </script>
+</body>
+</html>
