@@ -10,6 +10,7 @@ const FormData = require('form-data');
 const fs = require('fs');
 const crypto = require('crypto');
 const { google } = require('googleapis');
+const cron = require('node-cron');
 const { optimizeImage, validateImage } = require('./media-optimizer');
 const { initializeGoogleDrive, uploadToGoogleDrive, getStorageQuota, deleteAllFilesInFolder, uploadAllFilesFromFolder } = require('./google-drive');
 require('dotenv').config();
@@ -29,6 +30,9 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASS
   }
 });
+
+// مصفوفة البوستات المجدولة (ستُخزن في الذاكرة - يمكن استبدالها بقاعدة بيانات لاحقاً)
+let scheduledPosts = [];
 
 // Start Health Check + Keep-Alive + Cleanup System
 require('./health-check');
@@ -1241,6 +1245,103 @@ app.post('/api/test-notification', async (req, res) => {
   res.json({ message: '✅ تم الاختبار! افتح الـ Console عشان تشوف النتائج 📱📧' });
 });
 
+// =============== جدولة البوستات (Scheduled Posts) ===============
+
+// Endpoint لإضافة بوست مجدول من الداشبورد
+app.post('/api/schedule-post', upload.fields([{name: 'photo', maxCount: 1}]), async (req, res) => {
+  const { message, schedule_time, link } = req.body;
+  const photoFile = req.files?.photo?.[0];
+
+  if (!message || !schedule_time) {
+    return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
+  }
+
+  scheduledPosts.push({
+    message,
+    link: link || '',
+    photo: photoFile ? `/temp-uploads/${photoFile.filename}` : null,
+    schedule_time: new Date(schedule_time).getTime(),
+    status: 'pending'
+  });
+
+  res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
+});
+
+// الجدولة: كل دقيقة نشوف لو في بوست وقته جيه
+cron.schedule('* * * * *', async () => {
+  const now = Date.now();
+
+  for (let i = 0; i < scheduledPosts.length; i++) {
+    const post = scheduledPosts[i];
+    if (post.status === 'pending' && post.schedule_time <= now) {
+      try {
+        // الحصول على page token
+        const pageToken = process.env.FB_PAGE_TOKEN || FB_PAGE_TOKEN;
+        const pageId = FB_PAGE_ID;
+        const pageName = 'IT-Solutions';
+
+        const postData = {
+          message: post.message,
+          access_token: pageToken
+        };
+        if (post.link) postData.link = post.link;
+
+        let finalPostId;
+
+        if (post.photo) {
+          // رفع الصورة
+          const photoPath = path.join(__dirname, 'public', post.photo);
+          const photoBuffer = fs.readFileSync(photoPath);
+
+          const photoForm = new FormData();
+          photoForm.append('source', photoBuffer, { filename: 'post.jpg', contentType: 'image/jpeg' });
+          photoForm.append('published', 'false');
+          photoForm.append('access_token', pageToken);
+
+          const photoRes = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/photos`, photoForm, {
+            headers: photoForm.getHeaders()
+          });
+
+          const feedData = {
+            message: post.message,
+            attached_media: [{ media_fbid: photoRes.data.post_id }],
+            access_token: pageToken
+          };
+          if (post.link) feedData.link = post.link;
+
+          const feedRes = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, feedData);
+          finalPostId = feedRes.data.id;
+        } else {
+          const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, postData);
+          finalPostId = res.data.id;
+        }
+
+        // إرسال الإشعار
+        const postUrl = `https://www.facebook.com/${finalPostId}`;
+        const groupLinks = `
+🔗 شير سريع لأهم الجروبات:
+https://www.facebook.com/groups/123456789/?multi_permalinks=${finalPostId}
+https://www.facebook.com/groups/987654321/?multi_permalinks=${finalPostId}
+https://www.facebook.com/groups/111222333/?multi_permalinks=${finalPostId}
+        `;
+
+        const tgMessage = `✅ تم نشر البوست المجدول!\n\n🔗 ${postUrl}\n\n${groupLinks}`;
+
+        if (telegramBot && process.env.TELEGRAM_CHAT_ID) {
+          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMessage, { disable_web_page_preview: true });
+        }
+
+        post.status = 'published';
+        console.log(`✅ [${new Date().toLocaleString()}] Scheduled post published: ${finalPostId}`);
+
+      } catch (err) {
+        console.error('❌ Scheduled post error:', err.response?.data || err.message);
+        post.status = 'failed';
+      }
+    }
+  }
+});
+
 // Now serve static files (after API routes)
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -1250,6 +1351,8 @@ app.listen(PORT, ()=>{
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📤 File upload API: POST /api/upload`);
   console.log(`🔔 Notification System: POST /api/test-notification`);
+  console.log(`📅 Scheduled Posts API: POST /api/schedule-post`);
+  console.log(`⏰ Cron Job: Running every minute to check scheduled posts`);
   if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
     console.log(`📱 Telegram Bot: Connected`);
   }
