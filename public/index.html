@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Facebook Automation Dashboard</title>
+  <style>
+    body { font-family: Arial; background:#121212; color:#fff; }
+    .stat { margin:10px 0; }
+    .bar { width: 300px; height: 20px; background:#333; border-radius:4px; overflow:hidden; }
+    .fill { height:100%; background:#4caf50; text-align:right; padding-right:5px; box-sizing:border-box; }
+    button { margin-top:10px; padding:8px 12px; cursor:pointer; }
+  </style>
+</head>
+<body>
+  <h1>🚀 Facebook Automation Dashboard</h1>
+  <div id="stats">
+    Loading stats...
+  </div>
+  <button onclick="openLogin()">Open Login Page</button>
+
+  <script>
+    async function fetchStats() {
+      const res = await fetch('/stats');
+      const data = await res.json();
+      document.getElementById('stats').innerHTML = `
+        <div class="stat">Uptime: ${data.uptime}</div>
+        <div class="stat">Platform: ${data.platform}</div>
+        <div class="stat">Node.js: ${data.node}</div>
+        <div class="stat">CPU Cores: ${data.cpuCores} - ${data.cpuModel}</div>
+        <div class="stat">RAM: <div class="bar"><div class="fill" style="width:${((data.totalMem - data.freeMem)/data.totalMem*100).toFixed(1)}%">${data.freeMem} MB free</div></div></div>
+        <div class="stat">Disk: <div class="bar"><div class="fill" style="width:${(data.diskUsed/data.diskTotal*100).toFixed(1)}%">${data.diskUsed} GB used</div></div></div>
+      `;
+    }
+
+    function openLogin() {
+      window.open('/login', 'Login', 'width=400,height=500');
+    }
+
+    // Refresh live every 2 seconds
+    setInterval(fetchStats, 2000);
+    fetchStats();
+  </script>
+</body>
+</html>
