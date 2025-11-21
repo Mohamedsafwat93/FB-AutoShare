@@ -634,30 +634,29 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       await optimizeImage(photoPath, 1200, 1200, 80);
       const photoBuffer = fs.readFileSync(photoPath);
       
-      // Upload to /photos
+      // Upload photo as unpublished to avoid separate post
       const photoFormData = new FormData();
       photoFormData.append('source', photoBuffer, {
         filename: photoFile.filename,
         contentType: photoFile.mimetype
       });
+      photoFormData.append('published', 'false');
       photoFormData.append('access_token', pageToken);
       
-      console.log(`📤 Uploading photo to ${pageId}/photos`);
+      console.log(`📤 Uploading unpublished photo to ${pageId}/photos`);
       const photoResponse = await axios.post(
         `https://graph.facebook.com/v19.0/${pageId}/photos`,
         photoFormData,
         { headers: photoFormData.getHeaders() }
       );
       
-      console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
+      console.log(`✅ Photo uploaded (unpublished): ${photoResponse.data.post_id}`);
       
-      // Create feed post with photo attachment - Ensure post appears AS page
+      // Create feed post with attached media using attached_media parameter
       const feedPostData = {
         message: message,
-        object_attachment: photoResponse.data.id,
-        access_token: pageToken,
-        is_hidden_from_stream: false,
-        is_explicit_place: false
+        attached_media: [{ media_fbid: photoResponse.data.post_id }],
+        access_token: pageToken
       };
       
       if(link) {
