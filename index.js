@@ -540,13 +540,13 @@ app.post('/api/facebook/groups-verify', async (req, res) => {
   }
 });
 
-// Facebook Post to Page - SINGLE METHOD using PAGE TOKEN ONLY (NO FALLBACK - prevents double posting)
+// Facebook Post to Page - PAGE TOKEN ONLY (Two-step: upload photo, then post with attachment)
 app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {name: 'video', maxCount: 1}]), async (req, res) => {
   try {
     const { message, link } = req.body;
     const photoFile = req.files?.photo?.[0];
     
-    // Use PAGE TOKEN ONLY
+    // Use PAGE TOKEN ONLY - No fallback to prevent double posting
     const pageToken = process.env.FB_PAGE_TOKEN;
     const targetPageId = FB_PAGE_ID; // 133112064223614 (IT-Solutions)
     
@@ -558,14 +558,14 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       return res.status(400).json({error:'FB_PAGE_TOKEN not configured'});
     }
 
-    console.log(`🔑 Using PAGE TOKEN for IT-Solutions (${targetPageId})`);
+    console.log(`🔑 PAGE TOKEN Method - Posting as IT-Solutions (${targetPageId})`);
 
-    // WITH PHOTO - Upload to /photos first, then post with object_attachment
+    // PHOTO POST - Two steps: upload to /photos, then post to /feed with object_attachment
     if(photoFile) {
       console.log(`📸 Photo detected: ${photoFile.filename}`);
       const photoPath = path.join(uploadDir, photoFile.filename);
       
-      // Validate image
+      // Validate & optimize image
       const validation = await validateImage(photoPath);
       if(!validation.valid) {
         console.warn(`⚠️ Image validation: ${validation.error}`);
@@ -573,13 +573,10 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
       }
       
-      // Optimize image for Facebook
       await optimizeImage(photoPath, 1200, 1200, 80);
-      
-      // Read file as buffer
       const photoBuffer = fs.readFileSync(photoPath);
       
-      // Step 1: Upload ONLY to /photos endpoint with PAGE TOKEN
+      // STEP 1: Upload photo to /photos endpoint
       const photoFormData = new FormData();
       photoFormData.append('source', photoBuffer, {
         filename: photoFile.filename,
@@ -587,16 +584,21 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       });
       photoFormData.append('access_token', pageToken);
       
-      console.log(`📤 Uploading photo to page ${targetPageId}/photos (Page Token)`);
-      const photoResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
-        photoFormData,
-        { headers: photoFormData.getHeaders() }
-      );
+      console.log(`📤 STEP 1: Uploading photo to ${targetPageId}/photos (PAGE TOKEN)`);
+      let photoResponse;
+      try {
+        photoResponse = await axios.post(
+          `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
+          photoFormData,
+          { headers: photoFormData.getHeaders() }
+        );
+        console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
+      } catch(photoErr) {
+        console.error('❌ Photo upload failed:', photoErr.response?.data?.error?.message || photoErr.message);
+        throw photoErr;
+      }
       
-      console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
-      
-      // Step 2: Create ONLY ONE feed post with photo attachment
+      // STEP 2: Create ONE feed post with the uploaded photo
       const feedPostData = {
         message: message,
         object_attachment: photoResponse.data.id,
@@ -607,23 +609,30 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         feedPostData.link = link;
       }
       
-      console.log(`📤 Creating ONE feed post with photo (Page Token - Posted AS IT-Solutions)`);
-      const feedResponse = await axios.post(
-        `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-        feedPostData
-      );
-      
-      console.log('✅ Post success (ONE post only):', feedResponse.data.id);
+      console.log(`📤 STEP 2: Creating feed post with photo (PAGE TOKEN - Posted AS IT-Solutions)`);
+      let feedResponse;
+      try {
+        feedResponse = await axios.post(
+          `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+          feedPostData
+        );
+        console.log('✅ ONE post created:', feedResponse.data.id);
+      } catch(feedErr) {
+        console.error('❌ Feed post failed:', feedErr.response?.data?.error?.message || feedErr.message);
+        throw feedErr;
+      }
       
       return res.json({
         success: true,
-        message: `✅ Posted to IT-Solutions!`,
+        message: `✅ Posted to IT-Solutions Page!`,
         postId: feedResponse.data.id,
-        posted_by: 'IT-Solutions Page'
+        posted_by: 'IT-Solutions Page',
+        posts_count: 1
       });
     }
     
-    // TEXT-ONLY - No photo
+    // TEXT-ONLY POST (No photo)
+    console.log(`📤 Text-only post (PAGE TOKEN - Posted AS IT-Solutions)`);
     const textPostData = {
       message: message,
       access_token: pageToken
@@ -633,7 +642,6 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       textPostData.link = link;
     }
     
-    console.log(`📤 Creating text post (Page Token - Posted AS IT-Solutions)`);
     const response = await axios.post(
       `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
       textPostData
@@ -643,7 +651,7 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
     
     return res.json({
       success: true,
-      message: `✅ Posted to IT-Solutions!`,
+      message: `✅ Posted to IT-Solutions Page!`,
       postId: response.data.id,
       posted_by: 'IT-Solutions Page'
     });
@@ -651,7 +659,8 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
   } catch(err) {
     console.error('❌ Facebook Post Error:', err.response?.data?.error?.message || err.message);
     res.status(500).json({
-      error: err.response?.data?.error?.message || err.message
+      error: err.response?.data?.error?.message || err.message,
+      details: err.response?.data
     });
   }
 });
