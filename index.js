@@ -31,8 +31,24 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// مصفوفة البوستات المجدولة (ستُخزن في الذاكرة - يمكن استبدالها بقاعدة بيانات لاحقاً)
-let scheduledPosts = [];
+// =============== نظام تحديث البوستات المجدولة ===============
+const DATA_FILE = path.join(__dirname, 'data', 'scheduled-posts.json');
+
+// إنشاء المجلد والملف لو مش موجودين من الأساس
+if (!fs.existsSync(DATA_FILE)) {
+  fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
+  fs.writeFileSync(DATA_FILE, '[]');
+  console.log('✅ تم إنشاء مجلد وملف البوستات المجدولة تلقائيًا');
+}
+
+// تحميل البوستات
+let scheduledPosts = JSON.parse(fs.readFileSync(DATA_FILE, 'utf-8'));
+console.log(`✅ تم تحميل ${scheduledPosts.length} بوست مجدول من الملف`);
+
+// دالة الحفظ (بتشتغل في كل مرة بنعدل فيها حاجة)
+function saveScheduledPosts() {
+  fs.writeFileSync(DATA_FILE, JSON.stringify(scheduledPosts, null, 2));
+}
 
 // Start Health Check + Keep-Alive + Cleanup System
 require('./health-check');
