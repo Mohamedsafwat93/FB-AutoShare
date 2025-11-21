@@ -149,28 +149,14 @@ https://your-repl-url/
 - Implemented cache-control headers to prevent stale data
 - Optimized grid layout for responsive design
 
-## MinIO Object Storage Integration
-- ✅ MinIO SDK installed and configured
-- ✅ Automatic bucket creation (facebook-posts, facebook-images, facebook-videos, backups)
-- ✅ Image optimization with Sharp (thumbnails + compressed versions)
-- ✅ Auto-backup system for all uploads
-- ✅ File listing, deletion, and statistics APIs
-- ✅ Docker Compose setup for local MinIO server
+## File Storage
+- ✅ Local disk storage for all uploads
+- ✅ Files saved to `/public/temp-uploads/`
+- ✅ Simple REST API for uploads
 
-### MinIO API Endpoints
+### Upload API
 ```
-POST /api/minio/upload - Upload files with auto-compression
-GET /api/minio/files/:bucket - List bucket files
-GET /api/minio/stats/:bucket - Get storage statistics
-GET /api/minio/buckets - List all buckets
-DELETE /api/minio/files/:bucket/:filename - Delete file
-```
-
-### Running MinIO Server Locally
-```bash
-docker-compose up -d
-# MinIO Console: http://localhost:9001
-# MinIO API: http://localhost:9000
+POST /api/upload - Upload files
 ```
 
 ## System Features
@@ -182,27 +168,11 @@ docker-compose up -d
 - ✅ WhatsApp integration (💬 Connect With Me button)
 - ✅ Modern 2025 dashboard with real-time stats
 - ✅ Service management and restart capabilities
-- ✅ MinIO cloud storage with auto-backup
+- ✅ Local file storage (no cloud subscription needed)
 
-## Deployment Options
+## Deployment
 
-### Option 1: Replit (Current)
-✅ Ready for Replit Publishing
-- 24/7 uptime with UptimeRobot
-- MinIO SDK available
-- Production-ready code
-
-### Option 2: Docker Compose (Recommended for MinIO)
-✅ Complete `docker-compose.yml` included
-- Runs MinIO + Node.js app together
-- Perfect for deployment on VPS/Cloud
-- Persistent storage volumes
-
-### Option 3: GitHub Deployment
-✅ Ready for GitHub push to https://github.com/Mohamedsafwat93/FB-AutoShare
-- Dockerfile included
-- docker-compose.yml for easy setup
-- Production-ready configuration
+Ready for GitHub deployment to: https://github.com/Mohamedsafwat93/FB-AutoShare
 
 ## Next Steps / Future Enhancements
 - Deploy to AWS/Railway/Digital Ocean with Docker
