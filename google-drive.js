@@ -16,8 +16,10 @@ async function initializeGoogleDrive() {
       return false;
     }
 
+    const credentials = JSON.parse(fs.readFileSync(KEYFILEPATH, 'utf8'));
+    
     const auth = new google.auth.GoogleAuth({
-      keyFile: KEYFILEPATH,
+      credentials: credentials,
       scopes: SCOPES
     });
 
