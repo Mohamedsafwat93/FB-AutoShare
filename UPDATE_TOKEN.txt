@@ -1,0 +1,18 @@
+⚠️ IMPORTANT - UPDATE YOUR PAGE TOKEN ⚠️
+
+Your new PAGE_ACCESS_TOKEN is ready to be set in Replit Secrets:
+
+EAAL4Ilg2wTEBQLKWIR92gyMvQ5oeDf127G8ryBuw8E8fVemuYPKXuLlLaVSg7Xke7iNeaLT2nG28ABY1D4Rt7t34hFLKWS7kJcELooTfZAtQhxEeNVTVehIWlA6HZA6gRS62kLK2l6FfZBKHs65aZAn0LCxdOK86ButynFVZADoMpZAxRiUrYkmm46aYjuBQpGQx0ZD
+
+Steps:
+1. Click the 🔒 Secrets button in Replit
+2. Find "FB_PAGE_TOKEN"
+3. Replace the old value with the new token above
+4. Save
+
+The backend code is now updated with:
+✅ Deduplication logic to prevent double posting
+✅ Proper PAGE TOKEN usage
+✅ Posts will be created AS the IT-Solutions page
+
+After updating the token, test posting from the dashboard!

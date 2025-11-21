@@ -540,10 +540,13 @@ app.post('/api/facebook/groups-verify', async (req, res) => {
   }
 });
 
-// Facebook Post to Page - PAGE TOKEN ONLY (Two-step: upload photo, then post with attachment)
+// Deduplication cache for posts (prevent double posting)
+const postCache = new Map();
+
+// Facebook Post to Page - PAGE TOKEN ONLY with Deduplication
 app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {name: 'video', maxCount: 1}]), async (req, res) => {
   try {
-    const { message, link } = req.body;
+    const { message, link, post_hash } = req.body;
     const photoFile = req.files?.photo?.[0];
     
     // Use PAGE TOKEN ONLY - No fallback to prevent double posting
@@ -556,6 +559,15 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
 
     if(!pageToken) {
       return res.status(400).json({error:'FB_PAGE_TOKEN not configured'});
+    }
+
+    // Check for duplicate posts using hash
+    if(post_hash && postCache.has(post_hash)) {
+      console.warn(`⚠️ Duplicate post detected (hash: ${post_hash})`);
+      return res.status(400).json({
+        success: false,
+        error: 'Duplicate post detected. Please modify your content.'
+      });
     }
 
     console.log(`🔑 PAGE TOKEN Method - Posting as IT-Solutions (${targetPageId})`);
@@ -622,6 +634,12 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         throw feedErr;
       }
       
+      // Store post hash to prevent duplicates (expires in 10 minutes)
+      if(post_hash) {
+        postCache.set(post_hash, true);
+        setTimeout(() => postCache.delete(post_hash), 10 * 60 * 1000);
+      }
+      
       return res.json({
         success: true,
         message: `✅ Posted to IT-Solutions Page!`,
@@ -648,6 +666,12 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
     );
     
     console.log('✅ Post success:', response.data.id);
+    
+    // Store post hash to prevent duplicates (expires in 10 minutes)
+    if(post_hash) {
+      postCache.set(post_hash, true);
+      setTimeout(() => postCache.delete(post_hash), 10 * 60 * 1000);
+    }
     
     return res.json({
       success: true,

@@ -25,6 +25,7 @@
     "googleapis": "^166.0.0",
     "multer": "^2.0.2",
     "node-cron": "^4.2.1",
+    "node-fetch": "^3.3.2",
     "sharp": "^0.34.5",
     "systeminformation": "^5.27.11"
   }
