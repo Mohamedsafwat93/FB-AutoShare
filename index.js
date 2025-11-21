@@ -634,34 +634,27 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
       await optimizeImage(photoPath, 1200, 1200, 80);
       const photoBuffer = fs.readFileSync(photoPath);
       
-      // Upload photo as unpublished to avoid separate post
+      // Upload to /photos
       const photoFormData = new FormData();
       photoFormData.append('source', photoBuffer, {
         filename: photoFile.filename,
         contentType: photoFile.mimetype
       });
-      photoFormData.append('published', 'false');
       photoFormData.append('access_token', pageToken);
       
-      console.log(`📤 Uploading unpublished photo to ${pageId}/photos`);
+      console.log(`📤 Uploading photo to ${pageId}/photos`);
       const photoResponse = await axios.post(
         `https://graph.facebook.com/v19.0/${pageId}/photos`,
         photoFormData,
         { headers: photoFormData.getHeaders() }
       );
       
-      console.log(`✅ Photo uploaded (unpublished): ${photoResponse.data.id || photoResponse.data.post_id}`);
+      console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
       
-      // Create feed post with attached media - Use the photo ID returned from upload
-      const photoId = photoResponse.data.post_id || photoResponse.data.id;
-      if(!photoId) {
-        console.error('❌ Photo ID not found in response:', photoResponse.data);
-        return res.status(400).json({error: 'Photo upload failed - no ID returned'});
-      }
-      
+      // Create feed post with photo attachment
       const feedPostData = {
         message: message,
-        attached_media: [{ media_fbid: photoId }],
+        object_attachment: photoResponse.data.id,
         access_token: pageToken
       };
       
