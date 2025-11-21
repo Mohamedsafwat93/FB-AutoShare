@@ -574,7 +574,7 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
           privacy: JSON.stringify({"value": "EVERYONE"})
         };
         
-        // If photo exists, upload via photos endpoint first
+        // If photo exists, post directly to feed with image (NO double posting)
         if(photoFile) {
           console.log(`📸 Photo detected: ${photoFile.filename}`);
           const photoPath = path.join(uploadDir, photoFile.filename);
@@ -593,46 +593,32 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
           // Read file as buffer
           const photoBuffer = fs.readFileSync(photoPath);
           
-          // Step 1: Upload photo to page's /photos endpoint with PAGE TOKEN
-          const photoFormData = new FormData();
-          photoFormData.append('source', photoBuffer, {
+          // Create ONE feed post with image embedded (fixes double posting issue)
+          const feedFormData = new FormData();
+          feedFormData.append('source', photoBuffer, {
             filename: photoFile.filename,
             contentType: photoFile.mimetype
           });
-          photoFormData.append('access_token', pageToken);
-          
-          console.log(`📤 Uploading photo to page ${targetPageId}/photos (Using PAGE TOKEN - will be PUBLIC)`);
-          const photoResponse = await axios.post(
-            `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
-            photoFormData,
-            { headers: photoFormData.getHeaders() }
-          );
-          
-          console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
-          
-          // Step 2: Create feed post with the uploaded photo (PUBLIC)
-          const feedPostData = {
-            message: postData.message,
-            object_attachment: photoResponse.data.id,
-            access_token: pageToken,
-            privacy: '{"value":"EVERYONE"}'
-          };
+          feedFormData.append('message', postData.message);
+          feedFormData.append('access_token', pageToken);
+          feedFormData.append('published', 'true');
           
           if(link) {
-            feedPostData.link = link;
+            feedFormData.append('link', link);
           }
           
-          console.log(`📤 Creating PUBLIC feed post on ${targetPageId}/feed with photo (Posted BY page - visible to EVERYONE)`);
+          console.log(`📤 Creating ONE feed post with photo on ${targetPageId}/feed (Posted AS Page - visible to EVERYONE)`);
           const feedResponse = await axios.post(
             `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-            feedPostData
+            feedFormData,
+            { headers: feedFormData.getHeaders() }
           );
           
-          console.log('✅ PUBLIC post successful:', feedResponse.data.id);
+          console.log('✅ Post published successfully:', feedResponse.data.id);
           
           return res.json({
             success: true,
-            message: `✅ Post published PUBLICLY on the page! (Posted BY IT-Solutions Page - Visible to EVERYONE)`,
+            message: `✅ Post published on IT-Solutions page!`,
             postId: feedResponse.data.id,
             visibility: 'PUBLIC',
             posted_by: 'IT-Solutions Page'
@@ -640,21 +626,27 @@ app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {nam
         }
         
         // Text-only post (no image)
+        const textPostData = {
+          message: message,
+          access_token: pageToken,
+          published: true
+        };
+        
         if(link) {
-          postData.link = link;
+          textPostData.link = link;
         }
         
-        console.log(`📤 Creating PUBLIC text post on ${targetPageId}/feed (Posted BY page - visible to EVERYONE)`);
+        console.log(`📤 Creating text post on ${targetPageId}/feed (Posted AS Page)`);
         const response = await axios.post(
           `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-          postData
+          textPostData
         );
         
-        console.log('✅ PUBLIC post successful:', response.data.id);
+        console.log('✅ Post successful:', response.data.id);
         
         return res.json({
           success: true,
-          message: `✅ Post published PUBLICLY on the page! (Posted BY IT-Solutions Page - Visible to EVERYONE)`,
+          message: `✅ Post published on IT-Solutions page!`,
           postId: response.data.id,
           visibility: 'PUBLIC',
           posted_by: 'IT-Solutions Page'
