@@ -149,26 +149,40 @@ async function integratedUpload(file, options = {}) {
     }
 }
 
-// 📋 Get Files List
+// 📋 Get Files List with timeout protection
 async function getFilesList(bucketName) {
-    try {
-        const files = [];
-        const stream = minioClient.listObjects(bucketName, '', true);
-        
-        for await (const file of stream) {
-            const url = await minioClient.presignedGetObject(bucketName, file.name, 24*60*60);
-            files.push({
-                name: file.name,
-                size: file.size,
-                lastModified: file.lastModified,
-                url: url
-            });
+    return new Promise(async (resolve, reject) => {
+        // Set absolute timeout of 4 seconds
+        const timeout = setTimeout(() => {
+            reject(new Error('MinIO list objects timeout'));
+        }, 4000);
+
+        try {
+            const files = [];
+            const stream = minioClient.listObjects(bucketName, '', true);
+            
+            for await (const file of stream) {
+                try {
+                    const url = await minioClient.presignedGetObject(bucketName, file.name, 24*60*60);
+                    files.push({
+                        name: file.name,
+                        size: file.size,
+                        lastModified: file.lastModified,
+                        url: url
+                    });
+                } catch (err) {
+                    // Skip individual file errors
+                    console.log(`Skipped file ${file.name}: ${err.message}`);
+                }
+            }
+            
+            clearTimeout(timeout);
+            resolve(files);
+        } catch (error) {
+            clearTimeout(timeout);
+            reject(new Error('Failed to list files: ' + error.message));
         }
-        
-        return files;
-    } catch (error) {
-        throw new Error('Failed to list files: ' + error.message);
-    }
+    });
 }
 
 // 🗑️ Delete File
@@ -181,40 +195,50 @@ async function deleteFile(bucketName, fileName) {
     }
 }
 
-// 📊 Get Bucket Stats with timeout
+// 📊 Get Bucket Stats with absolute timeout
 async function getBucketStats(bucketName) {
-    try {
-        // Set a timeout for MinIO operations (5 seconds max)
-        const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('MinIO connection timeout')), 5000)
-        );
+    // Absolute timeout: return empty stats after 3.5 seconds
+    return new Promise((resolve) => {
+        const absoluteTimeout = setTimeout(() => {
+            resolve({
+                bucket: bucketName,
+                fileCount: 0,
+                totalSize: 0,
+                totalSizeMB: '0.00',
+                files: [],
+                success: false,
+                warning: 'MinIO response timeout',
+                error: 'Connection timeout after 3.5s'
+            });
+        }, 3500);
 
-        const filesPromise = getFilesList(bucketName);
-        const files = await Promise.race([filesPromise, timeoutPromise]);
-        
-        const totalSize = files.reduce((sum, file) => sum + file.size, 0);
-        
-        return {
-            bucket: bucketName,
-            fileCount: files.length,
-            totalSize: totalSize,
-            totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
-            files: files,
-            success: true
-        };
-    } catch (error) {
-        // Return fallback stats even if MinIO fails
-        return { 
-            bucket: bucketName,
-            fileCount: 0,
-            totalSize: 0,
-            totalSizeMB: '0.00',
-            files: [],
-            success: false,
-            warning: 'MinIO unavailable - showing empty stats',
-            error: error.message
-        };
-    }
+        getFilesList(bucketName)
+            .then(files => {
+                clearTimeout(absoluteTimeout);
+                const totalSize = files.reduce((sum, file) => sum + file.size, 0);
+                resolve({
+                    bucket: bucketName,
+                    fileCount: files.length,
+                    totalSize: totalSize,
+                    totalSizeMB: (totalSize / 1024 / 1024).toFixed(2),
+                    files: files,
+                    success: true
+                });
+            })
+            .catch(error => {
+                clearTimeout(absoluteTimeout);
+                resolve({
+                    bucket: bucketName,
+                    fileCount: 0,
+                    totalSize: 0,
+                    totalSizeMB: '0.00',
+                    files: [],
+                    success: false,
+                    warning: 'MinIO unavailable - showing empty stats',
+                    error: error.message
+                });
+            });
+    });
 }
 
 module.exports = {
