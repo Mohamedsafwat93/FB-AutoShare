@@ -159,6 +159,62 @@
     @media (min-width: 768px) {
         html { font-size: 16px; }
     }
+    
+    footer { 
+        text-align: center; 
+        margin: 30px 0 15px 0; 
+        font-size: 0.9rem; 
+        color: #00ffd5; 
+        position: relative; 
+        padding: 15px 0; 
+        background: linear-gradient(135deg, rgba(0, 208, 255, 0.1), rgba(0, 255, 213, 0.05)); 
+        border-top: 1px solid rgba(0, 208, 255, 0.3); 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0, 208, 255, 0.2); 
+        transition: all 0.3s ease; 
+        animation: footerGlow 3s ease-in-out infinite; 
+    }
+
+    footer:hover { 
+        box-shadow: 0 8px 25px rgba(0, 208, 255, 0.4); 
+        transform: translateY(-3px); 
+    }
+
+    footer a { 
+        color: #00ffff; 
+        text-decoration: none; 
+        font-weight: 600; 
+        transition: color 0.3s ease; 
+    }
+
+    footer a:hover { 
+        color: #ffffff; 
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.6); 
+    }
+
+    footer .heart { 
+        color: #ff004c; 
+        animation: pulse 1.5s ease-in-out infinite; 
+    }
+
+    @keyframes footerGlow {
+        0%, 100% { box-shadow: 0 4px 15px rgba(0, 208, 255, 0.2); }
+        50% { box-shadow: 0 6px 20px rgba(0, 208, 255, 0.4); }
+    }
+
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+
+    @media (max-width: 767px) {
+        footer { 
+            font-size: 0.8rem; 
+            margin: 20px 0 10px 0; 
+            padding: 10px 0; 
+        }
+    }
+    
     .facebook-card-wrapper { background: linear-gradient(135deg, #121212 0%, #1a2a3a 100%); border-radius: 18px; padding: 20px; box-shadow: 0 0 25px #000 inset, 0 0 30px rgba(0, 208, 255, 0.2); animation: slideInCard 0.7s ease-out backwards; animation-delay: 0.8s; border: 2px solid transparent; background-clip: padding-box; transition: all 0.4s ease; }
     .facebook-card-wrapper h2 { text-align: center; font-size: 22px; margin-bottom: 10px; color: #00ffd5; animation: colorShift 3s ease-in-out infinite; text-shadow: 0 0 10px rgba(0, 208, 255, 0.3); }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
@@ -769,25 +825,8 @@
     </div>
 
 <footer>
-    <a href="https://wa.me/201127008149" target="_blank" class="connect-heading">💬 Connect With Me</a>
-    <div class="social-container">
-        <a href="https://kutt.it/SolutionsFB" target="_blank" class="social-btn facebook-btn">
-            👍 Facebook
-        </a>
-        <a href="https://kutt.it/SolutionsYT" target="_blank" class="social-btn youtube-btn">
-            ▶️ YouTube
-        </a>
-        <a href="https://kutt.it/SolutionsTT" target="_blank" class="social-btn tiktok-btn">
-            🎵 TikTok
-        </a>
-        <a href="https://kutt.it/SolutionsIG" target="_blank" class="social-btn instagram-btn">
-            📸 Instagram
-        </a>
-        <a href="https://github.com/Mohamedsafwat93" target="_blank" class="social-btn github-btn">
-            🚀 GitHub
-        </a>
-    </div>
-    <p style="color: #888; font-size: 14px; margin-top: 20px;">Made With Love ❤️ By Eng. Muhammed Safwat</p>
+    <p>Made with <span class="heart">❤️</span> by Eng. Muhammed Safwat &copy; 2025</p>
+    <p><a href="https://kutt.it/SolutionsFB" target="_blank">Facebook</a> | <a href="https://github.com/Mohamedsafwat93" target="_blank">GitHub</a> | <a href="https://wa.me/201127008149" target="_blank">WhatsApp</a></p>
 </footer>
 
 <script>
