@@ -446,13 +446,22 @@ async function validateTokens() {
         if(data.page_token?.valid) {
             statusText += '✅ Page Token: Valid (' + data.page_token.name + ')\n';
         } else {
-            statusText += '❌ Page Token: ' + (data.page_token?.error || 'Invalid') + '\n';
+            statusText += '❌ Page Token: ' + (data.page_token?.error || 'Invalid');
+            if(data.auto_page_token?.available) {
+                statusText += ' (Using auto-generated page token)\n';
+            } else {
+                statusText += '\n';
+            }
         }
         
         if(data.user_token?.valid) {
             statusText += '✅ User Token: Valid (' + data.user_token.name + ')\n';
         } else {
             statusText += '❌ User Token: ' + (data.user_token?.error || 'Invalid') + '\n';
+        }
+        
+        if(data.auto_page_token?.available) {
+            statusText += '✨ Auto-Generated: Page found "' + data.auto_page_token.page_name + '" - Posting enabled!';
         }
         
         statusEl.innerHTML = statusText.replace(/\n/g, '<br>');
