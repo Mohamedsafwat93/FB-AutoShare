@@ -145,7 +145,17 @@
             <div>
                 <button class="dropdown-toggle" onclick="toggleGroupsDropdown()">👥 Post to Facebook Groups</button>
                 <div id="groups-dropdown" class="dropdown-content">
-                    <button onclick="autoSyncGroups()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; margin-bottom: 10px;">🔄 Auto-Sync Groups</button>
+                    <div style="margin-bottom: 10px; padding: 8px; background: #1a1a1a; border-radius: 5px;">
+                        <h5 style="color: #00ffd5; margin: 0 0 8px 0; font-size: 12px;">Method 1: Auto-Sync (if available)</h5>
+                        <button onclick="autoSyncGroups()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">🔄 Auto-Sync Groups</button>
+                        <div id="groups-status" style="margin-top: 8px; max-height: 150px; overflow-y: auto; font-size: 11px; color: #888;"></div>
+                    </div>
+
+                    <div style="margin-bottom: 10px; padding: 8px; background: #1a1a1a; border-radius: 5px;">
+                        <h5 style="color: #00ffd5; margin: 0 0 8px 0; font-size: 12px;">Method 2: Manual Group IDs</h5>
+                        <textarea id="manual-group-ids" placeholder="Enter Group IDs (comma or line separated)&#10;Example: 123456789, 987654321" style="width: 100%; height: 50px; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #0a0a0a; color: #fff; font-family: monospace; font-size: 11px; box-sizing: border-box;"></textarea>
+                        <button onclick="loadManualGroups()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 8px;">Load Group IDs</button>
+                    </div>
                     
                     <select id="groups-select" style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                         <option value="">Select a group to post to...</option>
@@ -155,9 +165,6 @@
                     
                     <button onclick="postToSelectedGroup()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 10px;">📤 Post to Selected Group</button>
                     
-                    <div id="groups-status" style="margin-top: 10px; max-height: 250px; overflow-y: auto;">
-                        <p style="color: #888; text-align: center; font-size: 12px;">Click "Auto-Sync Groups" to load your groups</p>
-                    </div>
                     <p id="group-post-status" style="font-size: 11px; color: #888; margin-top: 8px;"></p>
                 </div>
             </div>
@@ -425,6 +432,36 @@ async function autoSyncGroups() {
         statusEl.innerHTML = '❌ Error: ' + err.message;
         console.error('Sync error:', err);
     }
+}
+
+function loadManualGroups() {
+    const idsText = document.getElementById('manual-group-ids').value.trim();
+    const selectEl = document.getElementById('groups-select');
+    const statusEl = document.getElementById('group-post-status');
+    
+    if(!idsText) {
+        statusEl.innerText = '❌ Please enter at least one group ID';
+        return;
+    }
+    
+    // Parse group IDs
+    const groupIds = idsText.split(/[,\n]/).map(id => id.trim()).filter(id => id);
+    
+    if(groupIds.length === 0) {
+        statusEl.innerText = '❌ No valid group IDs found';
+        return;
+    }
+    
+    // Clear and populate dropdown
+    selectEl.innerHTML = '<option value="">Select a group to post to...</option>';
+    groupIds.forEach(id => {
+        const option = document.createElement('option');
+        option.value = id;
+        option.text = 'Group: ' + id;
+        selectEl.appendChild(option);
+    });
+    
+    statusEl.innerText = '✅ Loaded ' + groupIds.length + ' group ID(s). Select one and post!';
 }
 
 async function postToSelectedGroup() {
