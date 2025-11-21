@@ -2,84 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Facebook Automation Dashboard</title>
-<style>
-body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
-h1, h2 { color: #2c3e50; }
-ul { list-style: none; padding: 0; }
-li { margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
-.status-success { background: #d4edda; color: #155724; }
-.status-failed { background: #f8d7da; color: #721c24; }
-.status-pending { background: #fff3cd; color: #856404; }
-button { margin-left: 5px; padding: 3px 7px; cursor: pointer; }
-#stats { margin-top: 20px; background: #dfe6e9; padding: 10px; border-radius: 5px; }
-</style>
+<link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-<h1>🚀 Facebook Automation Dashboard</h1>
-<h2>Last 10 Posts</h2>
-<ul id="postsList"></ul>
+  <div class="container">
+    <h1>🚀 Facebook Automation Dashboard</h1>
+    
+    <div class="section">
+      <h2>📊 Server Stats</h2>
+      <ul id="server-stats">
+        <li>Loading...</li>
+      </ul>
+      <button id="refresh-stats">Refresh Stats</button>
+    </div>
 
-<div id="stats">
-  <h2>📊 Server Stats</h2>
-  <div id="cpu"></div>
-  <div id="memory"></div>
-  <div id="uptime"></div>
-</div>
+    <div class="section">
+      <h2>⚡ Controls</h2>
+      <button id="restart-server">Restart Server</button>
+    </div>
+  </div>
 
-<script>
-function getStatusClass(status) {
-  if (status.includes('Success')) return 'status-success';
-  if (status.includes('Failed')) return 'status-failed';
-  if (status.includes('Pending')) return 'status-pending';
-  return '';
-}
-
-async function loadPosts() {
-  const res = await fetch('/api/posts');
-  const posts = await res.json();
-  const list = document.getElementById('postsList');
-  list.innerHTML = '';
-  posts.forEach(post => {
-    const li = document.createElement('li');
-    li.className = getStatusClass(post.status);
-    li.innerHTML = `
-      <div>
-        <strong>${post.message}</strong><br>
-        <span class="timestamp">${new Date(post.createdAt).toLocaleString()}</span><br>
-        <small>Status: ${post.status}</small>
-      </div>
-      <div>
-        <button onclick="deletePost(${post.id})">Delete</button>
-        <button onclick="repostPost()">Repost Last</button>
-      </div>
-    `;
-    list.appendChild(li);
-  });
-}
-
-async function deletePost(id) {
-  await fetch(`/api/posts/${id}`, { method: 'DELETE' });
-  loadPosts();
-}
-
-async function repostPost() {
-  await fetch('/api/repost', { method: 'POST' });
-  loadPosts();
-}
-
-async function loadStats() {
-  const res = await fetch('/api/stats');
-  const stats = await res.json();
-  document.getElementById('cpu').innerText = `CPU: ${stats.cpu.model} (${stats.cpu.cores} cores)`;
-  document.getElementById('memory').innerText = `Memory: ${(stats.memory.used/1e9).toFixed(2)} GB used / ${(stats.memory.total/1e9).toFixed(2)} GB total`;
-  document.getElementById('uptime').innerText = `Uptime: ${Math.floor(stats.uptime)} sec`;
-}
-
-// Refresh every 15 seconds
-loadPosts();
-loadStats();
-setInterval(() => { loadPosts(); loadStats(); }, 15000);
-</script>
+  <script src="dashboard.js"></script>
 </body>
 </html>
