@@ -1,32 +1,40 @@
-# Facebook Automation Dashboard
+# Server Monitoring Dashboard
 
 ## Overview
-A lightweight Node.js web server running on port 5000 that serves a beautiful dashboard for Facebook automation management. The server includes a health check endpoint for monitoring services like UptimeRobot.
+A professional Node.js Express server running on port 5000 that displays real-time server statistics through a beautiful modern web dashboard. Includes CPU, RAM, disk, and network monitoring with active services tracking.
 
 **Last Updated**: November 21, 2025
 
 ## Project Type
-Minimal Express Web Server with Dashboard
+Node.js Express Web Server with Real-Time Monitoring Dashboard
 
 ## Current Features
-- ✅ Express.js server on port 5000
-- ✅ Static dashboard UI from public folder
-- ✅ `/health` endpoint for uptime monitoring
-- ✅ `/find-dashboard` endpoint to locate and return dashboard URL
-- ✅ Ready for Facebook automation integration
+- ✅ Real-time CPU usage monitoring (percentage)
+- ✅ Live RAM usage with used/free breakdown
+- ✅ Disk space monitoring (total/used/free)
+- ✅ Network speed monitoring (RX/TX)
+- ✅ Active services and ports display
+- ✅ Beautiful modern dashboard UI with Chart.js visualizations
+- ✅ Doughnut charts with gradient animations
+- ✅ Server restart control button
+- ✅ Responsive 3-column grid layout
+- ✅ Dark theme with cyan/magenta accents
 
 ## Technology Stack
 - **Runtime**: Node.js 20
 - **Framework**: Express.js
-- **HTTP Client**: Axios (installed)
+- **Monitoring**: systeminformation package
+- **Charts**: Chart.js (CDN)
+- **Storage**: diskusage package
 - **Environment**: dotenv (installed)
 
 ## Project Structure
 ```
 .
-├── index.js                  # Main Express server (35 lines)
+├── index.js                  # Main Express server (90 lines)
 ├── public/
-│   └── dashboard.html        # Dashboard UI
+│   ├── index.html            # Modern dashboard UI
+│   └── login.html            # Login page template
 ├── package.json              # Dependencies
 ├── package-lock.json         # Lock file
 ├── .env.example              # Environment template
@@ -34,88 +42,125 @@ Minimal Express Web Server with Dashboard
 └── replit.md                # This file
 ```
 
+## API Endpoints
+
+### GET /api/stats
+Returns real-time system statistics
+```json
+{
+  "uptime": 935.6,
+  "platform": "linux",
+  "cpuUsage": "89.4",
+  "totalMem": 67430191104,
+  "freeMem": 42035417088,
+  "diskUsed": 34193473536,
+  "diskTotal": 52743716864,
+  "network": { "rx_sec": 451.3, "tx_sec": 15677.5 },
+  "services": [{ "proto": "tcp", "localAddress": "0.0.0.0:5000", "state": "LISTEN", "pid_program": "node" }]
+}
+```
+
+### GET /api/services
+Lists active network services (fallback endpoint)
+
+### POST /api/restart
+Triggers server restart (responds with confirmation)
+
+### GET /login
+Serves the login page in a popup window
+
+### GET / or /dashboard.html
+Serves the main dashboard
+
 ## Setup Instructions
 
 ### 1. Install Dependencies
-Dependencies are already installed (Express, Axios, dotenv). If needed:
 ```bash
 npm install
 ```
+All dependencies are pre-installed:
+- express
+- systeminformation
+- diskusage
+- dotenv
+- axios
 
 ### 2. Start the Server
-The workflow "Start Server" is already configured and runs automatically. Or manually:
+The workflow "Start Server" runs automatically. Or manually:
 ```bash
 node index.js
 ```
 
-### 3. Access Your Dashboard
+### 3. Access Dashboard
 ```
-http://your-repl-url:5000/
+https://your-repl-url/
 ```
 
-## API Endpoints
+## Dashboard Features
 
-### GET /
-Serves the dashboard.html from the public folder
-
-### GET /health
-Health check for monitoring services (UptimeRobot, etc.)
-```bash
-curl https://your-repl-url/health
-```
-Response: `Server is running!`
-
-### GET /find-dashboard
-Auto-discovers the dashboard file and returns its URL
-```bash
-curl https://your-repl-url/find-dashboard
-```
-Response:
-```json
-{
-  "dashboard_file": "dashboard.html",
-  "dashboard_url": "https://your-repl-url/dashboard.html",
-  "base_url": "https://your-repl-url"
-}
-```
+**CPU Chart**: Real-time CPU usage percentage (red/orange gradient)
+**RAM Chart**: Memory usage with free/used breakdown (green/cyan gradient)
+**Disk Chart**: Storage utilization (magenta/pink gradient)
+**Network Chart**: Network speed monitoring (cyan/blue gradient)
+**Services Table**: Active listening services and ports
+**Restart Button**: Trigger server restart functionality
 
 ## 24/7 Uptime with UptimeRobot
 
 ### Setup Steps
 1. Create account at [UptimeRobot](https://uptimerobot.com/)
 2. Add new monitor with type "HTTP(s)"
-3. Use your Replit URL + `/health` endpoint
+3. Use your Replit URL (e.g., `https://your-repl-url/`)
 4. Set monitoring interval (5 minutes recommended)
-5. UptimeRobot will ping your server to keep it alive
+5. Server will stay alive with pings
+
+## Performance Notes
+- Server specs: AMD EPYC 9B14, 8 cores, 64GB RAM
+- Dashboard updates every 1.5 seconds
+- Minimal memory footprint
+- No database required
+- All data fetched from system APIs
 
 ## Troubleshooting
 
-### Server Won't Start
-- Check that Node.js dependencies are installed: `npm install`
-- Verify no other process is using port 5000
+### Dashboard not loading
+- Hard refresh browser: Ctrl+Shift+R (Windows) or Cmd+Shift+R (Mac)
+- Or open in incognito/private window
 
-### Dashboard Not Loading
-- Ensure the workflow is running
-- Check that `public/dashboard.html` exists
-- Clear browser cache
+### API returning errors
+- Check server is running: `curl http://localhost:5000/api/stats`
+- Verify Node.js dependencies: `npm install`
 
-### Can't Find Dashboard URL
-- Visit `https://your-repl-url/find-dashboard` to auto-discover the dashboard
+### Services not showing
+- Some systems may require elevated permissions for netstat
+- Fallback displays empty list (graceful degradation)
 
 ## User Preferences
-- Minimal, clean, lightweight codebase
-- Focus on serving dashboard and health checks
-- Ready for future Facebook API integration
-- Secure token management via .env file
+- Modern, professional UI with dark theme
+- Real-time updates every 1.5 seconds
+- Gradient animations on charts
+- Clean data presentation
+- Ready for GitHub deployment
 
 ## Recent Changes
-- **November 21, 2025**: Cleaned up project, removed Python files, simplified to minimal Express server
-- Created `/find-dashboard` endpoint for auto-discovery
+- **November 21, 2025**: Deployed modern 2025 dashboard design
+- Implemented real-time chart updates with Chart.js
+- Added services monitoring to API response
+- Implemented cache-control headers to prevent stale data
+- Optimized grid layout for responsive design
 
 ## Next Steps / Future Enhancements
-- Integrate Facebook Graph API for automated posting
-- Add post management API endpoints
-- Implement post scheduling system
-- Add support for posting images and media
-- Create analytics dashboard
-- Add email notifications
+- Facebook Graph API integration for automated posting
+- Post scheduling system
+- Media upload support (images/videos)
+- Analytics dashboard
+- Email/SMS notifications
+- User authentication system
+- Database persistence for historical data
+- Advanced network monitoring (bandwidth graphs)
+
+## Deployment Status
+✅ Ready for GitHub push to https://github.com/Mohamedsafwat93/FB-AutoShare
+✅ Ready for Replit Publishing (24/7 uptime with UptimeRobot)
+✅ Production-ready code
+

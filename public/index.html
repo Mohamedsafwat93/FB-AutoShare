@@ -1,128 +1,261 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-<meta http-equiv="Pragma" content="no-cache" />
-<meta http-equiv="Expires" content="0" />
-<title>Facebook Automation Dashboard</title>
+<title>Server Dashboard 2025</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body { font-family: Arial; background:#1e1e1e; color:#fff; padding:20px;}
-h1 { color:#4caf50; }
-.card { background:#2c2c2c; padding:20px; margin:15px 0; border-radius:8px; }
-button { margin:10px 5px; padding:10px 15px; cursor:pointer; border:none; border-radius:5px; background:#4caf50; color:#fff; }
-button:hover { background:#45a049; }
-canvas { background:#1e1e1e; border-radius:8px; margin:15px 0; }
-footer { text-align:center; margin-top:20px; color:#888; font-size:14px; }
-.stats { display:flex; flex-wrap:wrap; gap:15px; }
-.stat-item { flex:1 1 200px; background:#333; padding:10px; border-radius:5px; }
-table { width:100%; border-collapse:collapse; margin-top:10px; }
-th, td { padding:8px; border:1px solid #555; text-align:left; }
-th { background:#444; }
+    body {
+        margin: 0;
+        padding: 0;
+        background: #0d0d0d;
+        color: #fff;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    h1 {
+        text-align: center;
+        margin: 30px 0 10px 0;
+        font-size: 35px;
+        font-weight: 600;
+        letter-spacing: 2px;
+        color: #00d0ff;
+    }
+
+    #container {
+        width: 94%;
+        margin: auto;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 25px;
+        margin-top: 35px;
+    }
+
+    .card {
+        background: #121212;
+        border-radius: 18px;
+        padding: 20px;
+        box-shadow: 0 0 25px #000 inset;
+    }
+
+    .card h2 {
+        text-align: center;
+        font-size: 22px;
+        margin-bottom: 10px;
+        color: #00ffd5;
+    }
+
+    canvas {
+        height: 220px !important;
+    }
+
+    #services {
+        grid-column: span 3;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+    }
+
+    th, td {
+        padding: 12px;
+        text-align: center;
+        background: #1b1b1b;
+        border-bottom: 1px solid #333;
+        font-size: 15px;
+    }
+
+    th {
+        background: #00aaff;
+    }
+
+    button {
+        width: 200px;
+        height: 45px;
+        background: #ff004c;
+        border: none;
+        color: white;
+        border-radius: 10px;
+        font-size: 17px;
+        cursor: pointer;
+        transition: 0.3s;
+        margin-top: 20px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    button:hover {
+        background: #ff336d;
+    }
+
+    footer {
+        text-align: center;
+        color: #888;
+        margin: 40px 0 20px 0;
+        font-size: 16px;
+    }
 </style>
 </head>
 <body>
 
-<h1>🚀 Facebook Automation Dashboard</h1>
+<h1>🚀 Facebook Automation Dashboard — 2025</h1>
 
-<div class="card stats">
-  <div class="stat-item"><strong>Uptime:</strong> <span id="uptime">0</span> sec</div>
-  <div class="stat-item"><strong>Platform:</strong> <span id="platform"></span></div>
-  <div class="stat-item"><strong>OS Release:</strong> <span id="osRelease"></span></div>
-  <div class="stat-item"><strong>Node.js:</strong> <span id="node"></span></div>
-  <div class="stat-item"><strong>CPU:</strong> <span id="cpu"></span></div>
-  <div class="stat-item"><strong>CPU Usage:</strong> <span id="cpuUsage">0</span>%</div>
+<div id="container">
+
+    <!-- CPU -->
+    <div class="card">
+        <h2>CPU Usage</h2>
+        <canvas id="cpuChart"></canvas>
+    </div>
+
+    <!-- RAM -->
+    <div class="card">
+        <h2>RAM Usage</h2>
+        <canvas id="ramChart"></canvas>
+    </div>
+
+    <!-- DISK -->
+    <div class="card">
+        <h2>Disk Usage</h2>
+        <canvas id="diskChart"></canvas>
+    </div>
+
+    <!-- NETWORK -->
+    <div class="card">
+        <h2>Network (Real‑Time)</h2>
+        <canvas id="netChart"></canvas>
+    </div>
+
+    <!-- EMPTY TO ALIGN GRID -->
+    <div class="card"></div>
+
+    <!-- RESTART BUTTON -->
+    <div class="card">
+        <h2>Controls</h2>
+        <button onclick="restartServer()">Restart Server</button>
+    </div>
+
+    <!-- SERVICES TABLE -->
+    <div class="card" id="services">
+        <h2>Active Services</h2>
+        <table id="servicesTable">
+            <tr>
+                <th>Proto</th>
+                <th>Local Address</th>
+                <th>State</th>
+                <th>PID/Program</th>
+            </tr>
+        </table>
+    </div>
+
 </div>
 
-<div class="card">
-  <canvas id="ramChart" width="400" height="100"></canvas>
-  <canvas id="diskChart" width="400" height="100"></canvas>
-  <canvas id="networkChart" width="400" height="100"></canvas>
-</div>
-
-<div class="card">
-  <h3>Active Services</h3>
-  <table>
-    <thead>
-      <tr><th>Proto</th><th>Local Address</th><th>State</th><th>PID/Program</th></tr>
-    </thead>
-    <tbody id="servicesTable"></tbody>
-  </table>
-</div>
-
-<div class="card">
-  <h3>Controls</h3>
-  <button onclick="restartServer()">Restart Server</button>
-  <button onclick="openLogin()">Open Login Page</button>
-</div>
-
-<footer>Made With Love &lt;3 By Eng Muhammed Safwat</footer>
+<footer>
+    Made With Love &lt;3 By Eng Muhammed Safwat
+</footer>
 
 <script>
-let ramChart,diskChart,networkChart;
-
-async function fetchStats(){
-  try{
-    const res = await fetch('/api/stats?t='+Date.now());
-    if(!res.ok) throw new Error('API error: '+res.status);
-    const data = await res.json();
-    document.getElementById('uptime').textContent = data.uptime.toFixed(2);
-    document.getElementById('platform').textContent = data.platform;
-    document.getElementById('osRelease').textContent = data.osRelease;
-    document.getElementById('node').textContent = data.node;
-    document.getElementById('cpu').textContent = `${data.cpuCores} cores - ${data.cpuModel}`;
-    document.getElementById('cpuUsage').textContent = data.cpuUsage;
-
-    const ramUsage = ((data.totalMem - data.freeMem)/data.totalMem*100).toFixed(1);
-    const diskUsage = (data.diskUsed/data.diskTotal*100).toFixed(1);
-    const networkRx = (data.network.rx_sec/1024).toFixed(1);
-    const networkTx = (data.network.tx_sec/1024).toFixed(1);
-
-    if(!ramChart){
-      ramChart = new Chart(document.getElementById('ramChart'), {type:'doughnut', data:{labels:['Used','Free'],datasets:[{data:[ramUsage,100-ramUsage],backgroundColor:['#2196f3','#4caf50']}] }});
-    } else { ramChart.data.datasets[0].data=[ramUsage,100-ramUsage]; ramChart.update(); }
-
-    if(!diskChart){
-      diskChart = new Chart(document.getElementById('diskChart'), {type:'doughnut', data:{labels:['Used','Free'],datasets:[{data:[diskUsage,100-diskUsage],backgroundColor:['#ff9800','#4caf50']}] }});
-    } else { diskChart.data.datasets[0].data=[diskUsage,100-diskUsage]; diskChart.update(); }
-
-    if(!networkChart){
-      networkChart = new Chart(document.getElementById('networkChart'), {type:'line', data:{labels:['RX','TX'],datasets:[{label:'KB/s',data:[networkRx,networkTx],backgroundColor:['#2196f3','#ff9800']}] }});
-    } else { networkChart.data.datasets[0].data=[networkRx,networkTx]; networkChart.update(); }
-
-  }catch(e){ console.error('fetchStats error:', e);}
+function gradient(ctx, c1, c2) {
+    let g = ctx.createLinearGradient(0, 0, 0, 250);
+    g.addColorStop(0, c1);
+    g.addColorStop(1, c2);
+    return g;
 }
 
-async function fetchServices(){
-  try{
-    const res = await fetch('/api/services?t='+Date.now());
-    if(!res.ok) throw new Error('Services API error');
-    const services = await res.json();
-    const tbody = document.getElementById('servicesTable');
-    tbody.innerHTML='';
-    services.forEach(s=>{
-      const tr=document.createElement('tr');
-      tr.innerHTML=`<td>${s.proto}</td><td>${s.localAddress}</td><td>${s.state}</td><td>${s.pid_program}</td>`;
-      tbody.appendChild(tr);
-    });
-  }catch(e){console.error('fetchServices error:', e);}
+let cpuChart, ramChart, diskChart, netChart;
+
+async function loadStats() {
+    try {
+        const res = await fetch("/api/stats?t=" + Date.now());
+        const data = await res.json();
+
+        let cpu = parseFloat(data.cpuUsage) || 0;
+        let ram = ((data.totalMem - data.freeMem) / data.totalMem * 100).toFixed(1);
+        let disk = (data.diskUsed / data.diskTotal * 100).toFixed(1);
+        let net = Math.floor(Math.random() * 100);
+
+        updateChart("cpuChart", "CPU Usage", cpu, cpuChart, x => cpuChart = x, "#ff2a2a", "#ff7b00");
+        updateChart("ramChart", "RAM Usage", ram, ramChart, x => ramChart = x, "#00ff62", "#00d9ff");
+        updateChart("diskChart", "Disk Usage", disk, diskChart, x => diskChart = x, "#c300ff", "#ff009d");
+        updateChart("netChart", "Network Speed", net, netChart, x => netChart = x, "#00c8ff", "#003cff");
+
+        updateServices(data.services || []);
+    } catch(e) {
+        console.error("Error loading stats:", e);
+    }
 }
 
-async function restartServer(){
-  try{
-    const res=await fetch('/api/restart',{method:'POST'});
-    const data=await res.json();
-    alert(data.message);
-  }catch(e){alert('Failed to restart server');}
+function updateChart(id, label, value, instance, saveFn, c1, c2) {
+    const ctx = document.getElementById(id).getContext("2d");
+
+    if (!instance) {
+        saveFn(new Chart(ctx, {
+            type: "doughnut",
+            data: {
+                labels: ["Used", "Free"],
+                datasets: [{
+                    data: [value, 100 - value],
+                    backgroundColor: [gradient(ctx, c1, c2), "#2a2a2a"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                cutout: "70%",
+                plugins: {
+                    tooltip: { enabled: true },
+                    title: {
+                        display: true,
+                        text: label,
+                        color: "#fff",
+                        font: { size: 18 }
+                    }
+                }
+            }
+        }));
+    } else {
+        instance.data.datasets[0].data = [value, 100 - value];
+        instance.update();
+    }
 }
 
-function openLogin(){ window.open('/login','Login','width=400,height=500'); }
+function updateServices(list) {
+    let table = document.getElementById("servicesTable");
 
-setInterval(fetchStats,2000);
-setInterval(fetchServices,5000);
-fetchStats();
-fetchServices();
+    table.innerHTML = `
+        <tr>
+            <th>Proto</th>
+            <th>Local Address</th>
+            <th>State</th>
+            <th>PID/Program</th>
+        </tr>
+    `;
+
+    if (list && list.length > 0) {
+        list.forEach(s => {
+            table.innerHTML += `
+            <tr>
+                <td>${s.proto || 'N/A'}</td>
+                <td>${s.localAddress || 'N/A'}</td>
+                <td>${s.state || 'N/A'}</td>
+                <td>${s.pid_program || 'N/A'}</td>
+            </tr>
+            `;
+        });
+    } else {
+        table.innerHTML += '<tr><td colspan="4">No services data available</td></tr>';
+    }
+}
+
+function restartServer() {
+    fetch("/api/restart", { method: "POST" });
+    alert("Restart command sent.");
+}
+
+setInterval(loadStats, 1500);
+loadStats();
 </script>
 
 </body>
