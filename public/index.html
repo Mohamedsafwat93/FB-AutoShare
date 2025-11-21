@@ -134,10 +134,14 @@
 
             <!-- Post to Page -->
             <div style="margin-bottom: 15px;">
-                <h4 style="color: #00ffd5; margin: 10px 0;">Post to Your Page</h4>
+                <h4 style="color: #00ffd5; margin: 10px 0;">📄 Post to IT-Solutions Page</h4>
                 <input type="text" id="fb-message" placeholder="Enter your message..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
                 <input type="text" id="fb-link" placeholder="Optional link..." style="width: 100%; padding: 8px; margin: 8px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; box-sizing: border-box;">
-                <button onclick="postToFacebook()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; margin: 8px 0;">Post to Facebook</button>
+                <div style="display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap;">
+                  <input type="file" id="fb-photo" accept="image/*" style="flex: 1; min-width: 100px; padding: 6px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 5px; font-size: 11px;">
+                  <input type="file" id="fb-video" accept="video/*" style="flex: 1; min-width: 100px; padding: 6px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 5px; font-size: 11px;">
+                </div>
+                <button onclick="postToFacebook()" style="background: #1877f2; color: #fff; width: 100%; padding: 10px; border: none; border-radius: 5px; cursor: pointer; margin: 8px 0; font-weight: 600;">📤 Post to Page</button>
                 <p id="fb-status" style="font-size: 11px; color: #888; margin: 5px 0;"></p>
             </div>
 
