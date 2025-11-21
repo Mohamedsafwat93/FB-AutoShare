@@ -1272,12 +1272,8 @@ app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), 
     return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
   }
 
-  // أتوماتيك 100% (يحسب فرق التوقيت بنفسه سواء +2 أو +3)
-  const scheduledTime = new Date(schedule_time).getTime() + (new Date().getTimezoneOffset() * -60000);
-
-  if (isNaN(scheduledTime)) {
-    return res.status(400).json({ error: 'تاريخ غير صحيح' });
-  }
+  // +2 ساعة عشان السيرفر UTC وإحنا في مصر (الحل النهائي)
+  const scheduledTime = new Date(schedule_time).getTime() + (2 * 60 * 60 * 1000);
 
   const newPost = {
     id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -1292,7 +1288,7 @@ app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), 
   scheduledPosts.push(newPost);
   saveScheduledPosts();
 
-  console.log(`جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')}`);
+  console.log(`جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')} (بعد إضافة +2 ساعة لتعويض UTC)`);
   res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
 });
 
