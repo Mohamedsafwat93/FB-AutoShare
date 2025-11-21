@@ -891,6 +891,16 @@
                 <p id="fb-status" style="font-size: 11px; color: #888; margin: 5px 0;"></p>
             </div>
 
+            <!-- Scheduled Posts Section -->
+            <div style="background:#1a1a1a; padding:20px; border-radius:12px; margin:20px 0;">
+              <h3 style="color:#00ffd5;">📅 جدولة بوست جديد</h3>
+              <textarea id="sched-message" placeholder="الرسالة" style="width:100%; height:80px; background:#000; color:#fff; border:1px solid #00d0ff; border-radius:8px; padding:10px; box-sizing:border-box; margin:10px 0;"></textarea>
+              <input type="datetime-local" id="sched-time" style="width:100%; margin:10px 0; padding:10px; background:#000; color:#fff; border:1px solid #00d0ff; border-radius:8px; box-sizing:border-box;">
+              <input type="text" id="sched-link" placeholder="لينك (اختياري)" style="width:100%; margin:10px 0; padding:10px; background:#000; color:#fff; border:1px solid #00d0ff; border-radius:8px; box-sizing:border-box;">
+              <button onclick="schedulePost()" style="background:#00d0ff; color:#000; padding:12px 24px; border:none; border-radius:8px; font-weight:bold; width:100%; cursor:pointer; margin-top:10px;">جدولة البوست</button>
+              <p id="sched-status" style="font-size: 11px; color: #888; margin: 10px 0;"></p>
+            </div>
+
             <!-- Groups Section -->
             <div>
                 <button class="dropdown-toggle" onclick="toggleGroupsDropdown()">👥 Post to Facebook Groups</button>
@@ -1147,6 +1157,43 @@ async function testNotification() {
         }
     } catch (error) {
         alert('❌ Error: ' + error.message);
+    }
+}
+
+async function schedulePost() {
+    const message = document.getElementById('sched-message').value;
+    const time = document.getElementById('sched-time').value;
+    const link = document.getElementById('sched-link').value;
+    const statusEl = document.getElementById('sched-status');
+
+    if (!message || !time) {
+        statusEl.textContent = '❌ الرسالة والوقت مطلوبين';
+        statusEl.style.color = '#ff4444';
+        return;
+    }
+
+    const form = new FormData();
+    form.append('message', message);
+    form.append('schedule_time', time);
+    if (link) form.append('link', link);
+
+    try {
+        const res = await fetch('/api/schedule-post', { method: 'POST', body: form });
+        const data = await res.json();
+        
+        if (res.ok) {
+            statusEl.textContent = '✅ ' + data.message;
+            statusEl.style.color = '#00ff62';
+            document.getElementById('sched-message').value = '';
+            document.getElementById('sched-time').value = '';
+            document.getElementById('sched-link').value = '';
+        } else {
+            statusEl.textContent = '❌ ' + (data.error || 'خطأ');
+            statusEl.style.color = '#ff4444';
+        }
+    } catch (error) {
+        statusEl.textContent = '❌ خطأ: ' + error.message;
+        statusEl.style.color = '#ff4444';
     }
 }
 
