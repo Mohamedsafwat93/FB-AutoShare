@@ -1264,7 +1264,7 @@ app.post('/api/test-notification', async (req, res) => {
 // =============== جدولة البوستات (Scheduled Posts) ===============
 
 // Endpoint لإضافة بوست مجدول من الداشبورد
-app.post('/api/schedule-post', upload.fields([{name: 'photo', maxCount: 1}]), async (req, res) => {
+app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), async (req, res) => {
   const { message, schedule_time, link } = req.body;
   const photoFile = req.files?.photo?.[0];
 
@@ -1272,40 +1272,42 @@ app.post('/api/schedule-post', upload.fields([{name: 'photo', maxCount: 1}]), as
     return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
   }
 
-  scheduledPosts.push({
+  const scheduledTime = new Date(schedule_time).getTime();
+  if (isNaN(scheduledTime)) {
+    return res.status(400).json({ error: 'تاريخ غير صحيح' });
+  }
+
+  const newPost = {
+    id: Date.now() + Math.random().toString(36).substr(2, 9),
     message,
     link: link || '',
     photo: photoFile ? `/temp-uploads/${photoFile.filename}` : null,
-    schedule_time: new Date(schedule_time).getTime(),
-    status: 'pending'
-  });
+    schedule_time: scheduledTime,
+    status: 'pending',
+    created_at: Date.now()
+  };
 
+  scheduledPosts.push(newPost);
+  saveScheduledPosts();
+
+  console.log(`📅 جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')}`);
   res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
 });
 
-// الجدولة: كل دقيقة نشوف لو في بوست وقته جيه
+// الكرون جوب: كل دقيقة نشوف لو في بوست وقته جيه
 cron.schedule('* * * * *', async () => {
   const now = Date.now();
 
   for (let i = 0; i < scheduledPosts.length; i++) {
     const post = scheduledPosts[i];
+
     if (post.status === 'pending' && post.schedule_time <= now) {
       try {
-        // الحصول على page token
-        const pageToken = process.env.FB_PAGE_TOKEN || FB_PAGE_TOKEN;
+        const pageToken = process.env.FB_PAGE_TOKEN;
         const pageId = FB_PAGE_ID;
-        const pageName = 'IT-Solutions';
-
-        const postData = {
-          message: post.message,
-          access_token: pageToken
-        };
-        if (post.link) postData.link = post.link;
-
-        let finalPostId;
+        let finalPostId = null;
 
         if (post.photo) {
-          // رفع الصورة
           const photoPath = path.join(__dirname, 'public', post.photo);
           const photoBuffer = fs.readFileSync(photoPath);
 
@@ -1327,35 +1329,63 @@ cron.schedule('* * * * *', async () => {
 
           const feedRes = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, feedData);
           finalPostId = feedRes.data.id;
+
+          // حذف الصورة بعد النشر
+          try { fs.unlinkSync(photoPath); } catch(e) {}
         } else {
-          const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, postData);
+          const feedData = { message: post.message, access_token: pageToken };
+          if (post.link) feedData.link = post.link;
+
+          const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, feedData);
           finalPostId = res.data.id;
         }
 
-        // إرسال الإشعار
+        // إشعار التليجرام
         const postUrl = `https://www.facebook.com/${finalPostId}`;
-        const groupLinks = `
-🔗 شير سريع لأهم الجروبات:
+        const groupLinks = `شير سريع:
 https://www.facebook.com/groups/123456789/?multi_permalinks=${finalPostId}
 https://www.facebook.com/groups/987654321/?multi_permalinks=${finalPostId}
-https://www.facebook.com/groups/111222333/?multi_permalinks=${finalPostId}
-        `;
+(غيّر الأرقام دي بجروباتك الحقيقية لاحقًا)`;
 
-        const tgMessage = `✅ تم نشر البوست المجدول!\n\n🔗 ${postUrl}\n\n${groupLinks}`;
+        const tgMessage = `✅ تم نشر البوست المجدول بنجاح!
 
-        if (telegramBot && process.env.TELEGRAM_CHAT_ID) {
+${postUrl}
+
+${groupLinks}`;
+
+        if (telegramBot) {
           await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMessage, { disable_web_page_preview: true });
         }
 
         post.status = 'published';
-        console.log(`✅ [${new Date().toLocaleString()}] Scheduled post published: ${finalPostId}`);
+        post.published_at = Date.now();
+        post.post_id = finalPostId;
+        saveScheduledPosts();
+        console.log(`✅ تم نشر البوست: ${finalPostId}`);
 
       } catch (err) {
-        console.error('❌ Scheduled post error:', err.response?.data || err.message);
+        console.error('❌ فشل نشر بوست مجدول:', err.response?.data || err.message);
         post.status = 'failed';
+        post.error = (err.response?.data?.error?.message || err.message);
+        saveScheduledPosts();
+
+        if (telegramBot) {
+          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, `❌ فشل نشر بوست مجدول!
+الرسالة: ${post.message.substring(0, 100)}...
+الوقت: ${new Date(post.schedule_time).toLocaleString('ar-EG')}
+الخطأ: ${err.response?.data?.error?.message || err.message}`);
+        }
       }
     }
   }
+});
+
+// تنظيف يومي للبوستات المنشورة (كل يوم 00:00)
+cron.schedule('0 0 * * *', () => {
+  const oldCount = scheduledPosts.length;
+  scheduledPosts = scheduledPosts.filter(p => p.status !== 'published');
+  saveScheduledPosts();
+  console.log(`🧹 تم حذف ${oldCount - scheduledPosts.length} بوست منشور قديم`);
 });
 
 // Now serve static files (after API routes)
