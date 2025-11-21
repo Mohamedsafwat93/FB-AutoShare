@@ -1272,7 +1272,9 @@ app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), 
     return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
   }
 
+  // الحل النهائي: مفيش أي تعديل يدوي على التوقيت
   const scheduledTime = new Date(schedule_time).getTime();
+
   if (isNaN(scheduledTime)) {
     return res.status(400).json({ error: 'تاريخ غير صحيح' });
   }
@@ -1290,7 +1292,7 @@ app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), 
   scheduledPosts.push(newPost);
   saveScheduledPosts();
 
-  console.log(`📅 جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')}`);
+  console.log(`جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')}`);
   res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
 });
 
