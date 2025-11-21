@@ -26,14 +26,19 @@ wheels/
 
 # Environment variables
 .env
+.env.local
+.env.*.local
 
 # Google Drive credentials (NEVER commit these!)
 google_service.json
 credentials.json
 token.json
 oauth-token.json
-attached_assets/
-*.json.backup
+DEPLOYMENT_SECRETS.md
+
+# Never commit these directories
+attached_assets/**
+.git/
 
 # Logs
 logs/
