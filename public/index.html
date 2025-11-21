@@ -126,6 +126,12 @@
         <div class="facebook-section">
             <h3>📱 Facebook Posting & Groups Management</h3>
             
+            <!-- Token Status -->
+            <div style="margin-bottom: 15px; padding: 10px; background: #1a1a1a; border-radius: 5px;">
+                <button onclick="validateTokens()" style="background: #1877f2; color: #fff; width: 100%; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">🔍 Check Facebook Tokens</button>
+                <p id="token-status" style="font-size: 11px; color: #888; margin: 8px 0;"></p>
+            </div>
+
             <!-- Post to Page -->
             <div style="margin-bottom: 15px;">
                 <h4 style="color: #00ffd5; margin: 10px 0;">Post to Your Page</h4>
@@ -425,6 +431,34 @@ async function verifyGroups() {
 function toggleGroupsDropdown() {
     const dropdown = document.getElementById('groups-dropdown');
     dropdown.classList.toggle('active');
+}
+
+async function validateTokens() {
+    const statusEl = document.getElementById('token-status');
+    statusEl.innerText = '⏳ Checking tokens...';
+    
+    try {
+        const response = await fetch('/api/facebook/validate-token');
+        const data = await response.json();
+        
+        let statusText = '';
+        
+        if(data.page_token?.valid) {
+            statusText += '✅ Page Token: Valid (' + data.page_token.name + ')\n';
+        } else {
+            statusText += '❌ Page Token: ' + (data.page_token?.error || 'Invalid') + '\n';
+        }
+        
+        if(data.user_token?.valid) {
+            statusText += '✅ User Token: Valid (' + data.user_token.name + ')\n';
+        } else {
+            statusText += '❌ User Token: ' + (data.user_token?.error || 'Invalid') + '\n';
+        }
+        
+        statusEl.innerHTML = statusText.replace(/\n/g, '<br>');
+    } catch(err) {
+        statusEl.innerText = '❌ Error: ' + err.message;
+    }
 }
 
 function postToGroup(groupId, groupName) {
