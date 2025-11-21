@@ -19,7 +19,7 @@ console.log(`🧹 Cleanup old files every day at 00:00`);
 // Function to check server health
 async function checkServerHealth() {
     return new Promise((resolve) => {
-        const req = http.get(HEALTH_CHECK_URL, { timeout: 5000 }, (res) => {
+        const req = http.get(HEALTH_CHECK_URL, { timeout: 30000 }, (res) => {
             console.log(`✅ [${new Date().toLocaleString()}] Server is UP (${res.statusCode})`);
             resolve(true);
         });
@@ -30,7 +30,7 @@ async function checkServerHealth() {
         });
 
         req.on('timeout', () => {
-            console.log(`⏱️  [${new Date().toLocaleString()}] Server TIMEOUT - Restarting...`);
+            console.log(`⏱️  [${new Date().toLocaleString()}] Server TIMEOUT (>30s) - Restarting...`);
             req.destroy();
             resolve(false);
         });
