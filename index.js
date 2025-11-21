@@ -12,6 +12,7 @@ const crypto = require('crypto');
 const { google } = require('googleapis');
 const { optimizeImage, validateImage } = require('./media-optimizer');
 const { initializeGoogleDrive, uploadToGoogleDrive, getStorageQuota, deleteAllFilesInFolder, uploadAllFilesFromFolder } = require('./google-drive');
+const { sendNotification, sendTestNotification } = require('./notification-system');
 require('dotenv').config();
 
 // Start Health Check + Keep-Alive + Cleanup System
@@ -1192,6 +1193,23 @@ app.post('/api/sync-monthly-storage', async (req, res) => {
   }
 });
 
+// Notification System Test Endpoint
+app.post('/api/test-notification', async (req, res) => {
+  try {
+    await sendTestNotification();
+    res.json({ 
+      success: true, 
+      message: '✅ تم الإرسال لـ Telegram + Gmail!' 
+    });
+  } catch (error) {
+    console.error('❌ Notification error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message 
+    });
+  }
+});
+
 // Now serve static files (after API routes)
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -1200,4 +1218,11 @@ const PORT = 5000;
 app.listen(PORT, ()=>{
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`📤 File upload API: POST /api/upload`);
+  console.log(`🔔 Notification System: POST /api/test-notification`);
+  if (process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID) {
+    console.log(`📱 Telegram Bot: Connected`);
+  }
+  if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+    console.log(`📧 Gmail: Connected`);
+  }
 });
