@@ -972,12 +972,9 @@ async function sched() {
     return;
   }
 
-  // الحل السحري النهائي (سطر واحد بس!)
-  const egyptTime = new Date(dtValue).getTime() + (120 * 60 * 1000); // نضيف ساعتين فوراً هنا
-
   const form = new FormData();
   form.append('message', msg);
-  form.append('schedule_time', new Date(egyptTime).toISOString().slice(0,16)); // نبعت UTC للسيرفر
+  form.append('schedule_time', dtValue); // نرسل الوقت كما هو - السيرفر يطرح ساعتين
   if (lnk) form.append('link', lnk);
   if (file) {
     const field = file.type.startsWith('video/') ? 'video' : 'photo';
