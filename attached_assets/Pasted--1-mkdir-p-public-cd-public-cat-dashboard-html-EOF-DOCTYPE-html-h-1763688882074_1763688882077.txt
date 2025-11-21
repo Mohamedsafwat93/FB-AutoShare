@@ -1,0 +1,188 @@
+# 1️⃣ إنشاء ملفات المشروع
+mkdir -p public
+cd public
+cat > dashboard.html << 'EOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Facebook Automation Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background: #f8f9fa; }
+h1, h2 { color: #2c3e50; }
+ul { list-style: none; padding: 0; }
+li { margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+.status-success { background: #d4edda; color: #155724; }
+.status-failed { background: #f8d7da; color: #721c24; }
+.status-pending { background: #fff3cd; color: #856404; }
+button { margin-left: 5px; padding: 3px 7px; cursor: pointer; }
+#stats { margin-top: 20px; background: #dfe6e9; padding: 10px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<h1>🚀 Facebook Automation Dashboard</h1>
+<h2>Last 10 Posts</h2>
+<ul id="postsList"></ul>
+
+<div id="stats">
+  <h2>📊 Server Stats</h2>
+  <div id="cpu"></div>
+  <div id="memory"></div>
+  <div id="uptime"></div>
+</div>
+
+<script>
+function getStatusClass(status) {
+  if (status.includes('Success')) return 'status-success';
+  if (status.includes('Failed')) return 'status-failed';
+  if (status.includes('Pending')) return 'status-pending';
+  return '';
+}
+
+async function loadPosts() {
+  const res = await fetch('/api/posts');
+  const posts = await res.json();
+  const list = document.getElementById('postsList');
+  list.innerHTML = '';
+  posts.forEach(post => {
+    const li = document.createElement('li');
+    li.className = getStatusClass(post.status);
+    li.innerHTML = `
+      <div>
+        <strong>${post.message}</strong><br>
+        <span class="timestamp">${new Date(post.createdAt).toLocaleString()}</span><br>
+        <small>Status: ${post.status}</small>
+      </div>
+      <div>
+        <button onclick="deletePost(${post.id})">Delete</button>
+        <button onclick="repostPost()">Repost Last</button>
+      </div>
+    `;
+    list.appendChild(li);
+  });
+}
+
+async function deletePost(id) {
+  await fetch(`/api/posts/${id}`, { method: 'DELETE' });
+  loadPosts();
+}
+
+async function repostPost() {
+  await fetch('/api/repost', { method: 'POST' });
+  loadPosts();
+}
+
+async function loadStats() {
+  const res = await fetch('/api/stats');
+  const stats = await res.json();
+  document.getElementById('cpu').innerText = `CPU: ${stats.cpu.model} (${stats.cpu.cores} cores)`;
+  document.getElementById('memory').innerText = `Memory: ${(stats.memory.used/1e9).toFixed(2)} GB used / ${(stats.memory.total/1e9).toFixed(2)} GB total`;
+  document.getElementById('uptime').innerText = `Uptime: ${Math.floor(stats.uptime)} sec`;
+}
+
+loadPosts();
+loadStats();
+setInterval(() => { loadPosts(); loadStats(); }, 15000);
+</script>
+</body>
+</html>
+EOF
+cd ..
+
+# 2️⃣ إنشاء index.js
+cat > index.js << 'EOF'
+require('dotenv').config();
+const express = require('express');
+const fs = require('fs');
+const os = require('os');
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+app.use(express.static('public'));
+
+app.get('/api/posts', (req, res) => {
+  let posts = [];
+  if (fs.existsSync('postsLog.json')) {
+    posts = JSON.parse(fs.readFileSync('postsLog.json', 'utf8'));
+  }
+  res.json(posts.slice(-10).reverse());
+});
+
+app.post('/api/posts', (req, res) => {
+  const { message } = req.body;
+  let posts = [];
+  if (fs.existsSync('postsLog.json')) {
+    posts = JSON.parse(fs.readFileSync('postsLog.json', 'utf8'));
+  }
+  const newPost = { id: Date.now(), message, status: 'Pending', createdAt: new Date().toISOString() };
+  posts.push(newPost);
+  fs.writeFileSync('postsLog.json', JSON.stringify(posts, null, 2));
+  res.json({ success: true, post: newPost });
+});
+
+app.delete('/api/posts/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  let posts = [];
+  if (fs.existsSync('postsLog.json')) {
+    posts = JSON.parse(fs.readFileSync('postsLog.json', 'utf8'));
+  }
+  posts = posts.filter(p => p.id !== id);
+  fs.writeFileSync('postsLog.json', JSON.stringify(posts, null, 2));
+  res.json({ success: true });
+});
+
+app.post('/api/repost', (req, res) => {
+  let posts = [];
+  if (fs.existsSync('postsLog.json')) {
+    posts = JSON.parse(fs.readFileSync('postsLog.json', 'utf8'));
+  }
+  const lastPost = posts.slice(-1)[0];
+  if (lastPost) {
+    const repost = { ...lastPost, id: Date.now(), createdAt: new Date().toISOString() };
+    posts.push(repost);
+    fs.writeFileSync('postsLog.json', JSON.stringify(posts, null, 2));
+    return res.json({ success: true, post: repost });
+  }
+  res.json({ success: false, message: 'No post to repost' });
+});
+
+app.get('/api/stats', (req, res) => {
+  const stats = { cpu: { model: os.cpus()[0].model, cores: os.cpus().length }, memory: { total: os.totalmem(), used: os.totalmem()-os.freemem() }, uptime: process.uptime() };
+  res.json(stats);
+});
+
+app.get('/health', (req, res) => res.send('OK'));
+
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+EOF
+
+# 3️⃣ إنشاء .env
+cat > .env << 'EOF'
+PAGE_TOKEN=your_page_access_token_here
+USER_TOKEN=your_user_access_token_here
+PAGE_ID=your_facebook_page_id_here
+PORT=5000
+POST_INTERVAL=3600000
+EOF
+
+# 4️⃣ إنشاء package.json
+cat > package.json << 'EOF'
+{
+  "name": "facebook-automation-dashboard",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2"
+  }
+}
+EOF
+
+# 5️⃣ تثبيت الحزم وتشغيل السيرفر
+npm install
+node index.js
