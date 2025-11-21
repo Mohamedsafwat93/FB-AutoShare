@@ -188,7 +188,7 @@ Migrates all files from `/public/temp-uploads/` to Google Drive
 
 Ready for GitHub deployment to: https://github.com/Mohamedsafwat93/FB-AutoShare
 
-## Future File Storage Strategy
+## File Storage & Sync System
 
 **Current System:**
 - New uploads attempt Google Drive first (tries to avoid local storage)
@@ -200,24 +200,33 @@ Ready for GitHub deployment to: https://github.com/Mohamedsafwat93/FB-AutoShare
 User uploads file → Try Google Drive → Fail (certificate issue) → Store locally
 ```
 
-**Migration When Ready:**
-When you're ready to move files to Google Drive:
-1. Download `migrate-to-drive.js` + `google_service.json`
-2. Download all files from `/public/temp-uploads/`
-3. Run on your local machine:
+**API Endpoints for File Management:**
+
+### 1. `/api/migrate-to-drive` (POST)
+Uploads all local files to Google Drive folder and deletes local copies
 ```bash
-npm install googleapis
-node migrate-to-drive.js
+curl -X POST https://YOUR_URL/api/migrate-to-drive
 ```
+
+### 2. `/api/sync-monthly-storage` (POST)
+Monthly sync - uploads all local files to Google Drive and deletes local copies
+```bash
+curl -X POST https://YOUR_URL/api/sync-monthly-storage
+```
+
+**Note about deleting old Google Drive files:**
+- Replit has OpenSSL limitations that prevent automatic deletion of existing Drive files
+- To clear old files from Google Drive, manually delete from your Drive or run locally
+- New uploads will preserve existing files in your folder
 
 **Why This Works:**
 - ✅ Uploads work immediately (don't fail)
 - ✅ Files are safe and accessible
-- ✅ You batch-migrate to Google Drive when convenient
-- ✅ No more OpenSSL errors blocking your workflow
+- ✅ You can sync anytime via API endpoints
+- ✅ No need for local scripts
 
-**Existing Files:**
-- 15 files ready in `/public/temp-uploads/` 
+**Files Ready:**
+- ~15 files in `/public/temp-uploads/` 
 - Destination: Google Drive folder `1hByCXDjMMrYcWo5oAyqYqK_Jk603nZdL`
 
 ## Next Steps / Future Enhancements
