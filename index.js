@@ -1263,108 +1263,129 @@ app.post('/api/test-notification', async (req, res) => {
 
 // =============== جدولة البوستات (Scheduled Posts) ===============
 
-// Endpoint لإضافة بوست مجدول من الداشبورد
-app.post('/api/schedule-post', upload.fields([{ name: 'photo', maxCount: 1 }]), async (req, res) => {
-  const { message, schedule_time, link } = req.body;
-  const photoFile = req.files?.photo?.[0];
+// ====================== API: جدولة بوست (يدعم صورة وفيديو منفصل) ======================
+app.post('/api/schedule-post', upload.fields([
+  { name: 'photo', maxCount: 1 },
+  { name: 'video', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    const { message, schedule_time, link } = req.body;
+    const photoFile = req.files?.photo?.[0];
+    const videoFile = req.files?.video?.[0];
 
-  if (!message || !schedule_time) {
-    return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
+    if (!message || !schedule_time) {
+      return res.status(400).json({ error: 'الرسالة والوقت مطلوبين' });
+    }
+
+    // +2 ساعة لتعويض فرق التوقيت (سيرفر UTC وإحنا في مصر)
+    const scheduledTime = new Date(schedule_time).getTime() + (2 * 60 * 60 * 1000);
+
+    const newPost = {
+      id: Date.now() + Math.random().toString(36).substr(2, 9),
+      message,
+      link: link || '',
+      photo: photoFile ? `/temp-uploads/${photoFile.filename}` : null,
+      video: videoFile ? `/temp-uploads/${videoFile.filename}` : null,
+      schedule_time: scheduledTime,
+      status: 'pending',
+      created_at: Date.now()
+    };
+
+    scheduledPosts.push(newPost);
+    saveScheduledPosts();
+
+    console.log(`[Scheduled] New post at ${new Date(scheduledTime).toLocaleString('en-GB')} (Egypt Time)`);
+    res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
+  } catch (err) {
+    console.error('Schedule error:', err);
+    res.status(500).json({ error: 'خطأ في السيرفر' });
   }
-
-  // +2 ساعة عشان السيرفر UTC وإحنا في مصر (الحل النهائي)
-  const scheduledTime = new Date(schedule_time).getTime() + (2 * 60 * 60 * 1000);
-
-  const newPost = {
-    id: Date.now() + Math.random().toString(36).substr(2, 9),
-    message,
-    link: link || '',
-    photo: photoFile ? `/temp-uploads/${photoFile.filename}` : null,
-    schedule_time: scheduledTime,
-    status: 'pending',
-    created_at: Date.now()
-  };
-
-  scheduledPosts.push(newPost);
-  saveScheduledPosts();
-
-  console.log(`جدولة بوست جديد لـ ${new Date(scheduledTime).toLocaleString('ar-EG')} (بعد إضافة +2 ساعة لتعويض UTC)`);
-  res.json({ success: true, message: 'تم جدولة البوست بنجاح!' });
 });
 
-// الكرون جوب: فحص البوستات المجدولة ونشرها
+// ====================== الكرون جوب كل دقيقة (إنجليزي بس) ======================
 cron.schedule('* * * * *', async () => {
   const now = Date.now();
-  console.log(`\nجاري الفحص الدوري... الوقت الحالي: ${new Date(now).toLocaleString('ar-EG')}`);
+  console.log(`\n[CRON] Checking scheduled posts... Server time: ${new Date(now).toLocaleString('en-GB')}`);
 
-  let hasPublished = false;
+  let publishedThisMinute = false;
 
   for (let i = 0; i < scheduledPosts.length; i++) {
     const post = scheduledPosts[i];
 
-    console.log(`- بوست #${i+1}: ${new Date(post.schedule_time).toLocaleString('ar-EG')} | الحالة: ${post.status}`);
-
     if (post.status === 'pending' && post.schedule_time <= now) {
-      hasPublished = true;
-      console.log(`نشر البوست دلوقتي: "${post.message.substring(0, 50)}..."`);
+      publishedThisMinute = true;
+      console.log(`[PUBLISH] Now publishing post #${i+1} scheduled for ${new Date(post.schedule_time).toLocaleString('en-GB')}`);
 
       try {
         const { pageToken, pageId } = await getPageAccessToken();
         let finalPostId = null;
 
-        if (post.photo) {
-          const photoPath = path.join(__dirname, 'public', post.photo);
-          const photoBuffer = fs.readFileSync(photoPath);
-          const photoForm = new FormData();
-          photoForm.append('source', photoBuffer, { filename: 'post.jpg', contentType: 'image/jpeg' });
-          photoForm.append('published', 'false');
-          photoForm.append('access_token', pageToken);
+        // رفع صورة أو فيديو
+        if (post.photo || post.video) {
+          const filePath = path.join(__dirname, 'public', post.photo || post.video);
+          const fileBuffer = fs.readFileSync(filePath);
+          const isVideo = !!post.video;
 
-          const photoRes = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/photos`, photoForm, { headers: photoForm.getHeaders() });
-          const feedRes = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
-            message: post.message,
-            attached_media: [{ media_fbid: photoRes.data.post_id }],
-            access_token: pageToken
+          const form = new FormData();
+          form.append('source', fileBuffer, {
+            filename: isVideo ? 'video.mp4' : 'photo.jpg',
+            contentType: isVideo ? 'video/mp4' : 'image/jpeg'
           });
-          finalPostId = feedRes.data.id;
-          try { fs.unlinkSync(photoPath); } catch(e) {}
-        } else {
-          const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, {
-            message: post.message,
-            access_token: pageToken
-          });
+          form.append(isVideo ? 'caption' : 'caption', post.message);
+          form.append('access_token', pageToken);
+
+          const endpoint = isVideo 
+            ? `https://graph.facebook.com/v19.0/${pageId}/videos`
+            : `https://graph.facebook.com/v19.0/${pageId}/photos`;
+
+          const uploadRes = await axios.post(endpoint, form, { headers: form.getHeaders() });
+          finalPostId = uploadRes.data.id || uploadRes.data.post_id;
+
+          // حذف الملف بعد الرفع
+          try { fs.unlinkSync(filePath); } catch(e) {}
+        } 
+        // بوست نصي أو مع لينك
+        else {
+          const feedData = { message: post.message, access_token: pageToken };
+          if (post.link) feedData.link = post.link;
+          const res = await axios.post(`https://graph.facebook.com/v19.0/${pageId}/feed`, feedData);
           finalPostId = res.data.id;
         }
 
-        const tgMessage = `تم نشر البوست المجدول بنجاح!
-${post.message}
-
-https://www.facebook.com/${finalPostId}`;
-
-        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMessage);
+        // إشعار تليجرام
+        const tgMsg = `Post published successfully!\n\n${post.message.substring(0, 100)}...\n\nhttps://facebook.com/${finalPostId}`;
+        if (telegramBot) await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, tgMsg);
 
         post.status = 'published';
         post.post_id = finalPostId;
-        console.log(`تم النشر بنجاح: ${finalPostId}`);
+        post.published_at = Date.now();
+        console.log(`[SUCCESS] Post published: ${finalPostId}`);
 
       } catch (err) {
-        console.error('فشل النشر:', err.response?.data || err.message);
+        console.error('[ERROR] Failed to publish post:', err.response?.data || err.message);
         post.status = 'failed';
+        post.error = err.response?.data?.error?.message || err.message;
+
+        if (telegramBot) {
+          await telegramBot.sendMessage(process.env.TELEGRAM_CHAT_ID, `Failed to publish scheduled post!\nError: ${err.response?.data?.error?.message || err.message}`);
+        }
       }
 
       saveScheduledPosts();
     }
   }
 
-  if (!hasPublished) console.log('مفيش بوستات جاهزة للنشر في الدقيقة دي');
+  if (!publishedThisMinute) {
+    console.log('[CRON] No posts ready to publish this minute');
+  }
 });
 
-// تنظيف يومي للبوستات المنشورة (كل يوم 00:00)
+// تنظيف يومي للبوستات المنشورة
 cron.schedule('0 0 * * *', () => {
-  const oldCount = scheduledPosts.length;
+  const before = scheduledPosts.length;
   scheduledPosts = scheduledPosts.filter(p => p.status !== 'published');
   saveScheduledPosts();
-  console.log(`🧹 تم حذف ${oldCount - scheduledPosts.length} بوست منشور قديم`);
+  console.log(`[CLEANUP] Removed ${before - scheduledPosts.length} published posts`);
 });
 
 // Now serve static files (after API routes)
