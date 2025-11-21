@@ -21,12 +21,20 @@ async function initializeGoogleDrive() {
     
     // Check if it's a service account or OAuth credentials
     if (credentials.type === 'service_account') {
-      // Service account authentication
-      const auth = new google.auth.GoogleAuth({
-        keyFile: CREDENTIALS_PATH,
-        scopes: SCOPES
-      });
-      driveService = google.drive({ version: 'v3', auth });
+      // Service account authentication with JWT
+      try {
+        const auth = new google.auth.JWT({
+          email: credentials.client_email,
+          key: credentials.private_key,
+          scopes: SCOPES
+        });
+        driveService = google.drive({ version: 'v3', auth });
+        authenticated = true;
+        console.log('✅ Google Drive authenticated (Service Account JWT)');
+        return true;
+      } catch (error) {
+        throw new Error(`Service account JWT auth failed: ${error.message}`);
+      }
     } else if (credentials.installed) {
       // OAuth authentication
       const { client_secret, client_id, redirect_uris } = credentials.installed;
@@ -36,20 +44,19 @@ async function initializeGoogleDrive() {
       if (fs.existsSync(TOKEN_PATH)) {
         const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
         oauth2Client.setCredentials(token);
+        driveService = google.drive({ version: 'v3', auth: oauth2Client });
+        authenticated = true;
+        console.log('✅ Google Drive authenticated (OAuth)');
+        return true;
       } else {
         console.log('⚠️ Google Drive: token.json not found - OAuth authentication required');
         console.log('   Run: node setup-google-drive.js');
         return false;
       }
-      driveService = google.drive({ version: 'v3', auth: oauth2Client });
     } else {
       console.log('ℹ️ Google Drive: Unknown credentials format');
       return false;
     }
-
-    authenticated = true;
-    console.log('✅ Google Drive authenticated');
-    return true;
   } catch (error) {
     console.log(`ℹ️ Google Drive initialization failed: ${error.message}`);
     return false;
