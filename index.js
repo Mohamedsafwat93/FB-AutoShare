@@ -540,239 +540,119 @@ app.post('/api/facebook/groups-verify', async (req, res) => {
   }
 });
 
-// Facebook Post to Page with Media Support (Using PAGE TOKEN for PUBLIC posts)
+// Facebook Post to Page - SINGLE METHOD using PAGE TOKEN ONLY (NO FALLBACK - prevents double posting)
 app.post('/api/facebook/post', upload.fields([{name: 'photo', maxCount: 1}, {name: 'video', maxCount: 1}]), async (req, res) => {
   try {
-    const { message, link, page_id } = req.body;
+    const { message, link } = req.body;
     const photoFile = req.files?.photo?.[0];
-    const videoFile = req.files?.video?.[0];
     
-    // Read tokens fresh from environment
-    const userToken = process.env.FB_USER_TOKEN;
+    // Use PAGE TOKEN ONLY
     const pageToken = process.env.FB_PAGE_TOKEN;
-    
-    console.log(`🔐 Tokens - User: ${userToken ? '✅' : '❌'}, Page: ${pageToken ? '✅' : '❌'}`);
+    const targetPageId = FB_PAGE_ID; // 133112064223614 (IT-Solutions)
     
     if(!message) {
       return res.status(400).json({error:'Message cannot be empty'});
     }
 
-    // Method 1: Use PAGE TOKEN (Primary - posts as the page publicly)
-    if(pageToken) {
-      try {
-        console.log('🔑 Using PAGE TOKEN for public posting...');
-        
-        // Use the fixed IT-Solutions page ID or from request
-        const targetPageId = page_id || FB_PAGE_ID;
-        
-        console.log(`✅ Using Page ID: ${targetPageId}`);
-        
-        // Build post data with PAGE TOKEN
-        const postData = {
-          message: message,
-          access_token: pageToken,
-          privacy: JSON.stringify({"value": "EVERYONE"})
-        };
-        
-        // If photo exists, post directly to feed with image (NO double posting)
-        if(photoFile) {
-          console.log(`📸 Photo detected: ${photoFile.filename}`);
-          const photoPath = path.join(uploadDir, photoFile.filename);
-          
-          // Validate image
-          const validation = await validateImage(photoPath);
-          if(!validation.valid) {
-            console.warn(`⚠️ Image validation: ${validation.error}`);
-          } else {
-            console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
-          }
-          
-          // Optimize image for Facebook
-          await optimizeImage(photoPath, 1200, 1200, 80);
-          
-          // Read file as buffer
-          const photoBuffer = fs.readFileSync(photoPath);
-          
-          // Create ONE feed post with image embedded (fixes double posting issue)
-          const feedFormData = new FormData();
-          feedFormData.append('source', photoBuffer, {
-            filename: photoFile.filename,
-            contentType: photoFile.mimetype
-          });
-          feedFormData.append('message', postData.message);
-          feedFormData.append('access_token', pageToken);
-          feedFormData.append('published', 'true');
-          
-          if(link) {
-            feedFormData.append('link', link);
-          }
-          
-          console.log(`📤 Creating ONE feed post with photo on ${targetPageId}/feed (Posted AS Page - visible to EVERYONE)`);
-          const feedResponse = await axios.post(
-            `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-            feedFormData,
-            { headers: feedFormData.getHeaders() }
-          );
-          
-          console.log('✅ Post published successfully:', feedResponse.data.id);
-          
-          return res.json({
-            success: true,
-            message: `✅ Post published on IT-Solutions page!`,
-            postId: feedResponse.data.id,
-            visibility: 'PUBLIC',
-            posted_by: 'IT-Solutions Page'
-          });
-        }
-        
-        // Text-only post (no image)
-        const textPostData = {
-          message: message,
-          access_token: pageToken,
-          published: true
-        };
-        
-        if(link) {
-          textPostData.link = link;
-        }
-        
-        console.log(`📤 Creating text post on ${targetPageId}/feed (Posted AS Page)`);
-        const response = await axios.post(
-          `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
-          textPostData
-        );
-        
-        console.log('✅ Post successful:', response.data.id);
-        
-        return res.json({
-          success: true,
-          message: `✅ Post published on IT-Solutions page!`,
-          postId: response.data.id,
-          visibility: 'PUBLIC',
-          posted_by: 'IT-Solutions Page'
-        });
-      } catch(err) {
-        console.error('❌ Error with page token:', err.response?.data?.error?.message || err.message);
-        console.log('⚠️ Falling back to user token method...');
-        // Fall through to user token method
-      }
+    if(!pageToken) {
+      return res.status(400).json({error:'FB_PAGE_TOKEN not configured'});
     }
 
-    // Method 2: Fallback to USER TOKEN (if page token fails)
-    if(userToken) {
-      try {
-        console.log('📤 Fetching user pages...');
-        const pagesResponse = await axios.get(`https://graph.facebook.com/v18.0/me/accounts?access_token=${userToken}`);
-        
-        if(!pagesResponse.data.data || pagesResponse.data.data.length === 0) {
-          return res.status(400).json({error:'No pages found'});
-        }
-        
-        const page = pagesResponse.data.data[0];
-        console.log(`✅ Found page: ${page.name}`);
-        
-        // Build post data with page's access token from me/accounts
-        const postData = {
-          message: message,
-          access_token: page.access_token,
-          privacy: JSON.stringify({"value": "EVERYONE"})
-        };
-        
-        // If photo exists, upload via photos endpoint first
-        if(photoFile) {
-          console.log(`📸 Photo detected: ${photoFile.filename}`);
-          const photoPath = path.join(uploadDir, photoFile.filename);
-          
-          // Validate image
-          const validation = await validateImage(photoPath);
-          if(!validation.valid) {
-            console.warn(`⚠️ Image validation: ${validation.error}`);
-          } else {
-            console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
-          }
-          
-          // Optimize image for Facebook
-          await optimizeImage(photoPath, 1200, 1200, 80);
-          
-          // Read file as buffer
-          const photoBuffer = fs.readFileSync(photoPath);
-          
-          // Step 1: Upload photo to /photos endpoint
-          const photoFormData = new FormData();
-          photoFormData.append('source', photoBuffer, {
-            filename: photoFile.filename,
-            contentType: photoFile.mimetype
-          });
-          photoFormData.append('access_token', page.access_token);
-          
-          console.log(`📤 Uploading photo to ${page.id}/photos`);
-          const photoResponse = await axios.post(
-            `https://graph.facebook.com/v18.0/${page.id}/photos`,
-            photoFormData,
-            { headers: photoFormData.getHeaders() }
-          );
-          
-          console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
-          
-          // Step 2: Create feed post with the uploaded photo
-          const feedPostData = {
-            message: postData.message,
-            object_attachment: photoResponse.data.id,
-            access_token: page.access_token,
-            privacy: '{"value":"EVERYONE"}'
-          };
-          
-          if(link) {
-            feedPostData.link = link;
-          }
-          
-          console.log(`📤 Creating feed post on ${page.id}/feed with photo attachment (PUBLIC)`);
-          const feedResponse = await axios.post(
-            `https://graph.facebook.com/v18.0/${page.id}/feed`,
-            feedPostData
-          );
-          
-          console.log('✅ Post successful:', feedResponse.data.id);
-          
-          return res.json({
-            success: true,
-            message: `✅ Post published to "${page.name}"!`,
-            postId: feedResponse.data.id
-          });
-        }
-        
-        // Text-only post (no image)
-        if(link) {
-          postData.link = link;
-        }
-        
-        console.log(`📤 Creating text post on ${page.id}/feed (PUBLIC)`);
-        const response = await axios.post(
-          `https://graph.facebook.com/v18.0/${page.id}/feed`,
-          postData
-        );
-        
-        console.log('✅ Post successful:', response.data.id);
-        
-        return res.json({
-          success: true,
-          message: `✅ Post published to "${page.name}"!`,
-          postId: response.data.id
-        });
-      } catch(err) {
-        console.error('❌ Error with user token:', err.response?.data?.error?.message || err.message);
-        return res.status(500).json({
-          error: err.response?.data?.error?.message || err.message,
-          details: err.response?.data
-        });
+    console.log(`🔑 Using PAGE TOKEN for IT-Solutions (${targetPageId})`);
+
+    // WITH PHOTO - Upload to /photos first, then post with object_attachment
+    if(photoFile) {
+      console.log(`📸 Photo detected: ${photoFile.filename}`);
+      const photoPath = path.join(uploadDir, photoFile.filename);
+      
+      // Validate image
+      const validation = await validateImage(photoPath);
+      if(!validation.valid) {
+        console.warn(`⚠️ Image validation: ${validation.error}`);
+      } else {
+        console.log(`✅ Image valid: ${validation.format} (${validation.dimensions})`);
       }
+      
+      // Optimize image for Facebook
+      await optimizeImage(photoPath, 1200, 1200, 80);
+      
+      // Read file as buffer
+      const photoBuffer = fs.readFileSync(photoPath);
+      
+      // Step 1: Upload ONLY to /photos endpoint with PAGE TOKEN
+      const photoFormData = new FormData();
+      photoFormData.append('source', photoBuffer, {
+        filename: photoFile.filename,
+        contentType: photoFile.mimetype
+      });
+      photoFormData.append('access_token', pageToken);
+      
+      console.log(`📤 Uploading photo to page ${targetPageId}/photos (Page Token)`);
+      const photoResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/${targetPageId}/photos`,
+        photoFormData,
+        { headers: photoFormData.getHeaders() }
+      );
+      
+      console.log(`✅ Photo uploaded: ${photoResponse.data.id}`);
+      
+      // Step 2: Create ONLY ONE feed post with photo attachment
+      const feedPostData = {
+        message: message,
+        object_attachment: photoResponse.data.id,
+        access_token: pageToken
+      };
+      
+      if(link) {
+        feedPostData.link = link;
+      }
+      
+      console.log(`📤 Creating ONE feed post with photo (Page Token - Posted AS IT-Solutions)`);
+      const feedResponse = await axios.post(
+        `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+        feedPostData
+      );
+      
+      console.log('✅ Post success (ONE post only):', feedResponse.data.id);
+      
+      return res.json({
+        success: true,
+        message: `✅ Posted to IT-Solutions!`,
+        postId: feedResponse.data.id,
+        posted_by: 'IT-Solutions Page'
+      });
     }
     
-    return res.status(400).json({error:'No valid Facebook token configured. Check your FB_PAGE_TOKEN or FB_USER_TOKEN environment variables.'});
+    // TEXT-ONLY - No photo
+    const textPostData = {
+      message: message,
+      access_token: pageToken
+    };
+    
+    if(link) {
+      textPostData.link = link;
+    }
+    
+    console.log(`📤 Creating text post (Page Token - Posted AS IT-Solutions)`);
+    const response = await axios.post(
+      `https://graph.facebook.com/v18.0/${targetPageId}/feed`,
+      textPostData
+    );
+    
+    console.log('✅ Post success:', response.data.id);
+    
+    return res.json({
+      success: true,
+      message: `✅ Posted to IT-Solutions!`,
+      postId: response.data.id,
+      posted_by: 'IT-Solutions Page'
+    });
     
   } catch(err) {
-    console.error('❌ Unexpected error:', err.message);
-    res.status(500).json({ error: err.message });
+    console.error('❌ Facebook Post Error:', err.response?.data?.error?.message || err.message);
+    res.status(500).json({
+      error: err.response?.data?.error?.message || err.message
+    });
   }
 });
 
