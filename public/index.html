@@ -77,7 +77,182 @@
     .password-btn-submit:hover { background: #0d5cb8; }
     .password-btn-cancel { background: #333; color: #fff; }
     .password-btn-cancel:hover { background: #555; }
-    @media (max-width: 768px) { #container { grid-template-columns: 1fr; } #services { grid-column: span 1; } .stats { grid-template-columns: 1fr; } }
+    
+    /* ===== ANIMATIONS ===== */
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes slideInCard {
+        from { opacity: 0; transform: translateY(30px) scale(0.95); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    @keyframes glowPulse {
+        0%, 100% { box-shadow: 0 0 15px rgba(0, 208, 255, 0.3), 0 0 25px rgba(0, 255, 213, 0.1); }
+        50% { box-shadow: 0 0 25px rgba(0, 208, 255, 0.6), 0 0 40px rgba(0, 255, 213, 0.3); }
+    }
+    
+    @keyframes titleGlow {
+        0%, 100% { color: #00ffd5; text-shadow: 0 0 5px rgba(0, 255, 213, 0.3); }
+        50% { color: #00ffff; text-shadow: 0 0 15px rgba(0, 255, 255, 0.6); }
+    }
+    
+    @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+    }
+    
+    body {
+        background: linear-gradient(-45deg, #0d0d0d, #1a1f2e, #0d0d0d, #1a1a2e);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+    }
+    
+    h1 {
+        animation: fadeIn 0.8s ease-out, titleGlow 3s ease-in-out infinite;
+    }
+    
+    .stat-card {
+        animation: slideInCard 0.6s ease-out backwards;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:nth-child(1) { animation-delay: 0.1s; }
+    .stat-card:nth-child(2) { animation-delay: 0.2s; }
+    .stat-card:nth-child(3) { animation-delay: 0.3s; }
+    .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    
+    .stat-card:hover {
+        transform: translateY(-8px) scale(1.05);
+        box-shadow: 0 15px 40px rgba(0, 208, 255, 0.4);
+        border-left-color: #00ffff;
+    }
+    
+    .card {
+        animation: slideInCard 0.7s ease-out backwards;
+        transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    #container > .card:nth-child(1) { animation-delay: 0.1s; }
+    #container > .card:nth-child(2) { animation-delay: 0.2s; }
+    #container > .card:nth-child(3) { animation-delay: 0.3s; }
+    #container > .card:nth-child(4) { animation-delay: 0.4s; }
+    #container > .card:nth-child(5) { animation-delay: 0.5s; }
+    #container > .card:nth-child(6) { animation-delay: 0.6s; }
+    #container > .card:nth-child(7) { animation-delay: 0.7s; }
+    
+    .card:hover {
+        transform: translateY(-15px) scale(1.02);
+        box-shadow: 0 25px 50px rgba(0, 208, 255, 0.4), inset 0 0 20px rgba(0, 255, 213, 0.1);
+        background: linear-gradient(135deg, #1a1a1a 0%, #1a2a3a 100%);
+        animation: glowPulse 2s ease-in-out infinite;
+    }
+    
+    .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(0, 255, 255, 0.1), transparent);
+        animation: shimmer 3s infinite;
+    }
+    
+    .card h2 {
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .card:hover h2 {
+        color: #00ffff;
+        transform: scale(1.08) translateY(-2px);
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.6);
+    }
+    
+    canvas {
+        animation: fadeIn 1s ease-out 0.3s both;
+        filter: drop-shadow(0 0 5px rgba(0, 208, 255, 0.2));
+    }
+    
+    .loading-skeleton {
+        background: linear-gradient(90deg, #1a1a1a 25%, #2a2a2a 50%, #1a1a1a 75%);
+        background-size: 200% 100%;
+        animation: shimmer 2s infinite;
+        border-radius: 8px;
+    }
+    
+    table tr {
+        animation: fadeIn 0.6s ease-out backwards;
+    }
+    
+    table tr:nth-child(1) { animation-delay: 0.2s; }
+    table tr:nth-child(2) { animation-delay: 0.25s; }
+    table tr:nth-child(3) { animation-delay: 0.3s; }
+    table tr:nth-child(4) { animation-delay: 0.35s; }
+    table tr:nth-child(5) { animation-delay: 0.4s; }
+    
+    table tr:hover {
+        background: #2a2a2a !important;
+        box-shadow: inset 0 0 10px rgba(0, 208, 255, 0.2);
+        transform: scale(1.01);
+        transition: all 0.2s ease;
+    }
+    
+    button {
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    
+    button:active::before {
+        width: 300px;
+        height: 300px;
+    }
+    
+    .facebook-section {
+        animation: fadeIn 1s ease-out;
+    }
+    
+    .file-input-label:hover {
+        animation: none;
+    }
+    
+    @media (max-width: 768px) { 
+        #container { grid-template-columns: 1fr; } 
+        #services { grid-column: span 1; } 
+        .stats { grid-template-columns: 1fr; }
+        .card:hover { transform: translateY(-8px) scale(1.01); }
+    }
 </style>
 </head>
 <body>
