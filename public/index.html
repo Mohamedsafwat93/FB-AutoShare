@@ -101,10 +101,12 @@
     <!-- FACEBOOK GROUPS -->
     <div class="card" id="groups-card" style="grid-column: span 3;">
         <h2>👥 Facebook Groups</h2>
-        <button onclick="syncGroups()" style="background: #1877f2; width: 100%; margin-bottom: 15px;">🔄 Sync Groups</button>
+        <textarea id="group-ids" placeholder="Enter Group IDs (comma-separated or one per line)&#10;Example: 123456789, 987654321" style="width: 100%; height: 80px; padding: 8px; margin: 10px 0; border-radius: 5px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-family: monospace; font-size: 12px;"></textarea>
+        <button onclick="verifyGroups()" style="background: #1877f2; width: 100%; margin-bottom: 15px;">✅ Verify Groups</button>
         <div id="groups-container" style="max-height: 400px; overflow-y: auto;">
-            <p style="color: #888; text-align: center;">Click "Sync Groups" to load your groups...</p>
+            <p style="color: #888; text-align: center;">Paste your group IDs above and click "Verify Groups"</p>
         </div>
+        <p id="group-status" style="font-size: 12px; color: #888; margin-top: 10px;"></p>
     </div>
 
     <!-- DISK CLEANUP BUTTON -->
@@ -345,33 +347,62 @@ async function postToFacebook() {
     }
 }
 
-async function syncGroups() {
+async function verifyGroups() {
+    const groupIdsText = document.getElementById('group-ids').value.trim();
     const container = document.getElementById('groups-container');
-    container.innerHTML = '<p style="color: #888; text-align: center;">⏳ Loading groups...</p>';
+    const statusEl = document.getElementById('group-status');
+    
+    if(!groupIdsText) {
+        statusEl.innerText = '❌ Please enter at least one group ID';
+        return;
+    }
+
+    // Parse group IDs (comma or newline separated)
+    const groupIds = groupIdsText.split(/[,\n]/).map(id => id.trim()).filter(id => id);
+    
+    if(groupIds.length === 0) {
+        statusEl.innerText = '❌ No valid group IDs found';
+        return;
+    }
+
+    statusEl.innerText = '⏳ Verifying ' + groupIds.length + ' group(s)...';
+    container.innerHTML = '';
     
     try {
-        const response = await fetch("/api/facebook/groups");
+        const response = await fetch("/api/facebook/groups-verify", {
+            method: "POST",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ group_ids: groupIds })
+        });
+        
         const data = await response.json();
         
-        if(data.success && data.groups.length > 0) {
-            let html = `<p style="color: #00ffd5; margin-bottom: 15px;">📊 Found ${data.total} groups where you can post:</p>`;
+        if(data.groups && data.groups.length > 0) {
+            let html = `<p style="color: #00ffd5; margin-bottom: 15px;">✅ Verified ${data.valid_groups} of ${data.total_requested} groups:</p>`;
             
             data.groups.forEach(group => {
                 html += `
-                <div style="background: #1a1a1a; padding: 12px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #1877f2;">
+                <div style="background: #1a1a1a; padding: 12px; margin: 8px 0; border-radius: 8px; border-left: 4px solid #00ff62;">
                     <strong style="color: #00ffd5;">${group.name}</strong><br>
-                    <small style="color: #888;">Members: ${group.member_count || 'N/A'} | Privacy: ${group.privacy || 'N/A'}</small><br>
+                    <small style="color: #888;">ID: ${group.id} | Members: ${group.member_count || 'N/A'}</small><br>
                     <button onclick="postToGroup('${group.id}', '${group.name}');" style="background: #1877f2; color: #fff; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-size: 12px; margin-top: 8px;">📤 Post to this group</button>
                 </div>
                 `;
             });
             
+            if(data.invalid && data.invalid.length > 0) {
+                html += `<p style="color: #ff6b6b; margin-top: 15px;">⚠️ ${data.invalid.length} group(s) could not be verified - check IDs</p>`;
+            }
+            
             container.innerHTML = html;
+            statusEl.innerText = '✅ Groups verified successfully!';
         } else {
-            container.innerHTML = '<p style="color: #ff6b6b;">❌ No groups found or no posting rights</p>';
+            statusEl.innerText = '❌ No valid groups found. Check your group IDs.';
+            container.innerHTML = '<p style="color: #ff6b6b;">No groups to display</p>';
         }
     } catch(err) {
-        container.innerHTML = '<p style="color: #ff6b6b;">❌ Error: ' + err.message + '</p>';
+        statusEl.innerText = '❌ Error: ' + err.message;
+        container.innerHTML = '';
     }
 }
 
