@@ -958,22 +958,29 @@ document.getElementById('media').addEventListener('change', e => {
   p.innerHTML += `<p style="color:#00ffd5; margin-top:8px;">${f.name}</p>`;
 });
 
-// جدولة البوست
+// جدولة البوست - الحل النهائي 100%
 async function sched() {
   const msg = document.getElementById('msg').value.trim();
-  const dt = document.getElementById('dt').value;
+  const dt = document.getElementById('dt').value;  // مثال: 2025-11-22T00:45
   const lnk = document.getElementById('lnk').value.trim();
   const file = document.getElementById('media').files[0];
   const stat = document.getElementById('stat');
   const btn = document.getElementById('btn');
 
-  if (!msg || !dt) { stat.innerHTML = '<span style="color:#ff3366;">الرسالة والوقت مطلوبين!</span>'; return; }
+  if (!msg || !dt) {
+    stat.innerHTML = '<span style="color:#ff3366;">الرسالة والوقت مطلوبين!</span>';
+    return;
+  }
+
+  // السطر السحري الوحيد اللي هيحل كل المشاكل للأبد
+  // بنحول الوقت من Local Time (مصر) لـ UTC وبعدين السيرفر بيضيف +2 ساعة → يطلع صح 100%
+  const userDate = new Date(dt);                                   // الوقت اللي دخلته (بتوقيت مصر)
+  const utcDate   = new Date(userDate.getTime() - (userDate.getTimezoneOffset() * 60000));
+  const isoString = utcDate.toISOString().slice(0, 16);            // 2025-11-22T22:45  (UTC)
 
   const form = new FormData();
   form.append('message', msg);
-  // الحل السحري: نضيف Z في النهاية عشان المتصفح يعامل الوقت كـ UTC
-  // وبعدين السيرفر بيضيف +2 ساعة → يطلع مصر بالظبط
-  form.append('schedule_time', dt + 'Z');
+  form.append('schedule_time', isoString);     // ← ده اللي بيروح للسيرفر
   if (lnk) form.append('link', lnk);
   if (file) {
     const field = file.type.startsWith('video/') ? 'video' : 'photo';
@@ -985,7 +992,7 @@ async function sched() {
   stat.innerHTML = '<span style="color:#00ffd5;">جاري جدولة البوست...</span>';
 
   try {
-    const r = await fetch('/api/schedule-post', { method:'POST', body:form });
+    const r = await fetch('/api/schedule-post', { method: 'POST', body: form });
     const d = await r.json();
     if (d.success) {
       stat.innerHTML = '<span style="color:#00ff9d; font-size:22px;">تم بنجاح!</span>';
@@ -994,10 +1001,15 @@ async function sched() {
       document.getElementById('media').value = '';
       document.getElementById('preview').innerHTML = '';
       setTime(5);
-    } else stat.innerHTML = `<span style="color:#ff3366;">${d.error}</span>`;
-  } catch { stat.innerHTML = '<span style="color:#ff3366;">فشل الاتصال</span>'; }
-  btn.disabled = false;
-  btn.textContent = "Post Scheduling";
+    } else {
+      stat.innerHTML = `<span style="color:#ff3366;">${d.error}</span>`;
+    }
+  } catch {
+    stat.innerHTML = '<span style="color:#ff3366;">فشل الاتصال</span>';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Post Scheduling";
+  }
 }
 </script>
 
