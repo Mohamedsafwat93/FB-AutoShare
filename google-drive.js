@@ -1,62 +1,30 @@
 const fs = require('fs');
 const path = require('path');
 const { google } = require('googleapis');
-const { Readable } = require('stream');
 
 let driveService = null;
 let authenticated = false;
 
 const SCOPES = ['https://www.googleapis.com/auth/drive'];
-const CREDENTIALS_PATH = path.join(__dirname, 'credentials.json');
+const KEYFILEPATH = path.join(__dirname, 'google_service.json');
 
 // Initialize Google Drive service
 async function initializeGoogleDrive() {
   try {
-    if (!fs.existsSync(CREDENTIALS_PATH)) {
-      console.log('ℹ️ Google Drive: credentials.json not found');
+    if (!fs.existsSync(KEYFILEPATH)) {
+      console.log('ℹ️ Google Drive: google_service.json not found');
       return false;
     }
 
-    const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH));
-    
-    // Check if it's a service account or OAuth credentials
-    if (credentials.type === 'service_account') {
-      // Service account authentication with JWT
-      try {
-        const auth = new google.auth.JWT({
-          email: credentials.client_email,
-          key: credentials.private_key,
-          scopes: SCOPES
-        });
-        driveService = google.drive({ version: 'v3', auth });
-        authenticated = true;
-        console.log('✅ Google Drive authenticated (Service Account JWT)');
-        return true;
-      } catch (error) {
-        throw new Error(`Service account JWT auth failed: ${error.message}`);
-      }
-    } else if (credentials.installed) {
-      // OAuth authentication
-      const { client_secret, client_id, redirect_uris } = credentials.installed;
-      const oauth2Client = new google.auth.OAuth2(client_id, client_secret, redirect_uris[0]);
-      const TOKEN_PATH = path.join(__dirname, 'token.json');
-      
-      if (fs.existsSync(TOKEN_PATH)) {
-        const token = JSON.parse(fs.readFileSync(TOKEN_PATH));
-        oauth2Client.setCredentials(token);
-        driveService = google.drive({ version: 'v3', auth: oauth2Client });
-        authenticated = true;
-        console.log('✅ Google Drive authenticated (OAuth)');
-        return true;
-      } else {
-        console.log('⚠️ Google Drive: token.json not found - OAuth authentication required');
-        console.log('   Run: node setup-google-drive.js');
-        return false;
-      }
-    } else {
-      console.log('ℹ️ Google Drive: Unknown credentials format');
-      return false;
-    }
+    const auth = new google.auth.GoogleAuth({
+      keyFile: KEYFILEPATH,
+      scopes: SCOPES
+    });
+
+    driveService = google.drive({ version: 'v3', auth });
+    authenticated = true;
+    console.log('✅ Google Drive authenticated');
+    return true;
   } catch (error) {
     console.log(`ℹ️ Google Drive initialization failed: ${error.message}`);
     return false;
@@ -88,35 +56,25 @@ async function getStorageQuota() {
   }
 }
 
-// Upload file to Google Drive
-async function uploadToGoogleDrive(fileBuffer, fileName, folderId = null) {
+// Upload file to Google Drive (from file path)
+async function uploadFileToGoogleDrive(filePath, fileName, folderId = null) {
   if (!authenticated) {
     throw new Error('Google Drive not authenticated');
   }
 
   try {
-    // Validate buffer
-    if (!Buffer.isBuffer(fileBuffer)) {
-      throw new Error('File must be a Buffer');
-    }
-
     const fileMetadata = { name: fileName };
     if (folderId) {
       fileMetadata.parents = [folderId];
     }
 
-    // Create a readable stream from buffer
-    const stream = Readable.from([fileBuffer]);
+    const media = {
+      body: fs.createReadStream(filePath)
+    };
 
     const response = await driveService.files.create({
-      requestBody: {
-        name: fileName,
-        ...(folderId && { parents: [folderId] })
-      },
-      media: {
-        mimeType: 'application/octet-stream',
-        body: stream
-      },
+      resource: fileMetadata,
+      media: media,
       fields: 'id, name, webViewLink, size'
     });
 
@@ -128,6 +86,35 @@ async function uploadToGoogleDrive(fileBuffer, fileName, folderId = null) {
       size: response.data.size,
       storage: 'google-drive'
     };
+  } catch (error) {
+    throw new Error(`Google Drive upload failed: ${error.message}`);
+  }
+}
+
+// Upload file to Google Drive (from buffer)
+async function uploadToGoogleDrive(fileBuffer, fileName, folderId = null) {
+  if (!authenticated) {
+    throw new Error('Google Drive not authenticated');
+  }
+
+  try {
+    if (!Buffer.isBuffer(fileBuffer)) {
+      throw new Error('File must be a Buffer');
+    }
+
+    // Save buffer to temp file and upload
+    const tempFilePath = path.join(__dirname, `.tmp_${Date.now()}_${fileName}`);
+    fs.writeFileSync(tempFilePath, fileBuffer);
+
+    try {
+      const result = await uploadFileToGoogleDrive(tempFilePath, fileName, folderId);
+      return result;
+    } finally {
+      // Clean up temp file
+      if (fs.existsSync(tempFilePath)) {
+        fs.unlinkSync(tempFilePath);
+      }
+    }
   } catch (error) {
     throw new Error(`Google Drive upload failed: ${error.message}`);
   }
@@ -158,6 +145,7 @@ module.exports = {
   initializeGoogleDrive,
   getStorageQuota,
   uploadToGoogleDrive,
+  uploadFileToGoogleDrive,
   deleteFromGoogleDrive,
   isAuthenticated: () => authenticated
 };

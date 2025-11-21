@@ -151,21 +151,27 @@ https://your-repl-url/
 
 ## File Storage
 - ✅ Local disk storage for all uploads (default)
-- ✅ Google Drive integration (optional)
+- ✅ Google Drive integration (service account)
 - ✅ Files saved to `/public/temp-uploads/`
-- ✅ Simple REST API for uploads
+- ✅ REST API for uploads and file management
 
 ### Upload API
 ```
-POST /api/upload - Upload files (local or Google Drive)
-GET /api/drive/quota - Get Google Drive storage quota (requires authentication)
+POST /api/upload - Upload files (attempts Google Drive, falls back to local)
+GET /api/drive/quota - Get Google Drive storage quota
 ```
 
-### Google Drive Setup (Optional)
-1. Run: `node setup-google-drive.js`
-2. Follow the OAuth authentication steps
-3. Set `USE_GOOGLE_DRIVE=true` in `.env`
-4. Files will auto-upload to Google Drive
+### Google Drive Setup (Service Account)
+1. Add `google_service.json` (service account key) to project root
+2. Set `USE_GOOGLE_DRIVE=true` in `.env`
+3. Share Google Drive folder with: `itsolutions-s1@sodium-pathway-478819-m5.iam.gserviceaccount.com`
+4. Files automatically upload to Google Drive
+
+### Manual File Migration Script
+```bash
+node migrate-to-drive.js
+```
+Migrates all files from `/public/temp-uploads/` to Google Drive
 
 ## System Features
 - ✅ 24/7 Server monitoring with hourly health checks

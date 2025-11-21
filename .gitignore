@@ -28,6 +28,7 @@ wheels/
 .env
 
 # Google Drive credentials (NEVER commit these!)
+google_service.json
 credentials.json
 token.json
 
