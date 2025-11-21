@@ -31,60 +31,102 @@
         to { opacity: 1; transform: translateY(0); }
     }
     
+    .header-wrapper {
+        text-align: center;
+        margin: 30px 0 20px 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        padding: 25px 20px;
+        background: linear-gradient(135deg, rgba(0, 208, 255, 0.08), rgba(0, 255, 213, 0.05));
+        border-radius: 20px;
+        border: 2px solid rgba(0, 208, 255, 0.3);
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px rgba(0, 208, 255, 0.15), inset 0 0 20px rgba(0, 255, 213, 0.05);
+        animation: headerSlideIn 1s ease-out;
+    }
+    
+    @keyframes headerSlideIn {
+        from { opacity: 0; transform: translateY(-30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .header-wrapper::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(0, 208, 255, 0.1), transparent);
+        border-radius: 50%;
+        filter: blur(60px);
+        pointer-events: none;
+        animation: floatGlow 8s ease-in-out infinite;
+    }
+    
+    @keyframes floatGlow {
+        0%, 100% { transform: translate(0, 0); }
+        50% { transform: translate(20px, -20px); }
+    }
+    
+    .facebook-logo-img {
+        height: 70px;
+        width: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 15px rgba(0, 208, 255, 0.3));
+        animation: logoFloat 3s ease-in-out infinite;
+    }
+    
+    @keyframes logoFloat {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-8px); }
+    }
+    
+    @media (max-width: 768px) {
+        .facebook-logo-img { height: 50px; }
+    }
+    
     h1 { 
         text-align: center; 
-        margin: 20px 0 10px 0; 
-        font-size: 2rem; 
-        font-weight: 800; 
-        letter-spacing: 2px;
-        background: linear-gradient(90deg, #00d0ff, #00ffd5, #0084d0, #00d0ff);
-        background-size: 200% 200%;
+        margin: 0; 
+        font-size: 2.5rem; 
+        font-weight: 900; 
+        letter-spacing: 2.5px;
+        background: linear-gradient(135deg, #00d0ff, #00ffd5, #0084d0, #1877f2, #00d0ff);
+        background-size: 300% 300%;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        animation: textGradientShift 8s ease infinite, headerGlow 3s ease-in-out infinite, slideDown 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-        filter: drop-shadow(0 0 15px rgba(0, 208, 255, 0.4));
+        animation: textGradientShift 6s ease infinite, headerGlow 3s ease-in-out infinite;
+        filter: drop-shadow(0 0 20px rgba(0, 208, 255, 0.4));
         position: relative;
-        padding: 10px 0; 
-        border-top: 2px solid transparent;
-        border-bottom: 2px solid #00d0ff;
-        background-image: linear-gradient(90deg, #00d0ff, #00ffd5, #0084d0, #00d0ff);
-        border-image: linear-gradient(90deg, #00d0ff, #00ffd5, #0084d0, #00d0ff) 1;
+        z-index: 1;
+        text-shadow: 0 0 30px rgba(0, 208, 255, 0.2);
     }
     
     @media (min-width: 768px) { 
-        h1 { font-size: 3rem; margin: 40px 0 20px 0; letter-spacing: 3px; padding: 20px 0; }
+        h1 { font-size: 3.5rem; letter-spacing: 3px; }
     }
     
-    h1::before {
-        content: '';
-        position: absolute;
-        top: -30px; 
-        left: 50%;
-        transform: translateX(-50%);
-        width: 200px; 
-        height: 80px;
-        background: radial-gradient(ellipse at center, rgba(0, 208, 255, 0.2), transparent);
-        filter: blur(50px);
-        pointer-events: none;
-    }
-    
-    @media (min-width: 768px) {
-        h1::before { top: -50px; width: 300px; height: 100px; }
+    @media (min-width: 1024px) {
+        h1 { font-size: 4rem; }
     }
     
     h1::after {
-        content: '💫 ';
-        position: absolute;
-        right: 10%;
-        top: 50%;
-        transform: translateY(-50%);
-        font-size: 20px; 
-        animation: sparkle 2s ease-in-out infinite;
+        content: '✨';
+        display: inline-block;
+        margin-left: 15px;
+        font-size: 0.8em;
+        animation: spin 4s linear infinite;
     }
     
-    @media (min-width: 768px) {
-        h1::after { font-size: 28px; }
+    @keyframes spin {
+        0%, 100% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(180deg) scale(1.1); }
     }
     
     .stats { width: 100%; margin: 15px auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
@@ -662,8 +704,18 @@
     </div>
 </div>
 
-<div style="position: relative;">
-    <h1>🚀 Facebook Automation Dashboard — 2025</h1>
+<div class="header-wrapper">
+    <svg width="70" height="70" viewBox="0 0 70 70" fill="none" xmlns="http://www.w3.org/2000/svg" class="facebook-logo-img" style="filter: drop-shadow(0 4px 15px rgba(0, 208, 255, 0.4));">
+        <rect x="10" y="10" width="50" height="50" rx="8" fill="url(#facebookGradient)" stroke="#00ffd5" stroke-width="2"/>
+        <text x="35" y="45" font-size="32" font-weight="bold" fill="#00d0ff" text-anchor="middle" font-family="Arial">f</text>
+        <defs>
+            <linearGradient id="facebookGradient" x1="0" y1="0" x2="100" y2="100">
+                <stop offset="0%" style="stop-color:#1877f2;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#0a66c2;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+    </svg>
+    <h1>Facebook Automation Dashboard — 2025</h1>
 </div>
 
 <!-- Quick Stats Section -->
