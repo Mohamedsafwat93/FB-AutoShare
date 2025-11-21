@@ -1,0 +1,147 @@
+#!/bin/bash
+
+echo "🚀 Starting Professional Dashboard with GUI..."
+
+# 1️⃣ تشغيل Node.js سيرفر في الخلفية
+echo "Starting Node.js server..."
+nohup node index.js > node_logs.txt 2>&1 &
+
+# 2️⃣ تأكد من Python وحزمها (اختياري لمعالجة البيانات)
+echo "Setting up Python environment..."
+python3 -m pip install --upgrade pip
+pip3 install -r requirements.txt
+
+# 3️⃣ Health Check للتأكد من تشغيل السيرفر
+HEALTH_URL="http://localhost:5000/health"
+RETRY=5
+while [ $RETRY -gt 0 ]; do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_URL)
+    if [ "$STATUS" == "200" ]; then
+        echo "✅ Node.js server is healthy at $HEALTH_URL"
+        break
+    else
+        echo "⚠️ Health check failed, retrying..."
+        sleep 2
+        ((RETRY--))
+    fi
+done
+
+echo "🎉 Dashboard setup complete! Logs:"
+echo "Node.js logs: node_logs.txt"
+echo "Python logs: python_logs.txt (if Python service running)"
+
+echo "💻 Open http://localhost:5000/dashboard to see the GUI"
+
+# ----------------------------------------
+# يجب أن يكون index.js مهيأ بالشكل التالي:
+# ----------------------------------------
+cat << 'EOF' > index.js
+const express = require('express');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Dummy last posts array (replace with actual API call to Facebook)
+let lastPosts = [
+  { id: 1, message: "Post 1", time: "2025-11-21 00:00" },
+  { id: 2, message: "Post 2", time: "2025-11-21 01:00" },
+  { id: 3, message: "Post 3", time: "2025-11-21 02:00" },
+  { id: 4, message: "Post 4", time: "2025-11-21 03:00" },
+  { id: 5, message: "Post 5", time: "2025-11-21 04:00" },
+  { id: 6, message: "Post 6", time: "2025-11-21 05:00" },
+  { id: 7, message: "Post 7", time: "2025-11-21 06:00" },
+  { id: 8, message: "Post 8", time: "2025-11-21 07:00" },
+  { id: 9, message: "Post 9", time: "2025-11-21 08:00" },
+  { id: 10, message: "Post 10", time: "2025-11-21 09:00" }
+];
+
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+
+app.get('/health', (req, res) => {
+    res.json({ status: "healthy", timestamp: new Date().toISOString(), uptime: process.uptime() });
+});
+
+// Dashboard route
+app.get('/dashboard', (req, res) => {
+    const memoryUsage = process.memoryUsage();
+    const cpuLoad = os.loadavg();
+    const diskUsage = "Check manually with df -h on server"; // يمكن دمجه مع exec لاحقاً
+
+    // قراءة آخر 50 سطر لوج Node.js
+    let nodeLogs = "";
+    if(fs.existsSync("node_logs.txt")){
+        nodeLogs = fs.readFileSync("node_logs.txt", "utf-8").split("\n").slice(-50).join("\n");
+    }
+
+    // قراءة آخر 50 سطر لوج Python
+    let pythonLogs = "";
+    if(fs.existsSync("python_logs.txt")){
+        pythonLogs = fs.readFileSync("python_logs.txt", "utf-8").split("\n").slice(-50).join("\n");
+    }
+
+    res.render('dashboard', {
+        memoryUsage,
+        cpuLoad,
+        diskUsage,
+        lastPosts,
+        nodeLogs,
+        pythonLogs
+    });
+});
+
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+});
+EOF
+
+# ----------------------------------------
+# ملف EJS للواجهة
+# ----------------------------------------
+mkdir -p views
+cat << 'EOF' > views/dashboard.ejs
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Professional Dashboard</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h2 { margin-top: 30px; }
+pre { background: #f4f4f4; padding: 10px; overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+th, td { border: 1px solid #ddd; padding: 8px; }
+th { background: #333; color: white; }
+</style>
+</head>
+<body>
+<h1>🚀 Facebook Automation Dashboard</h1>
+
+<h2>System Status</h2>
+<ul>
+<li>Memory Usage: <%= (memoryUsage.rss / 1024 / 1024).toFixed(2) %> MB</li>
+<li>CPU Load (1,5,15 min avg): <%= cpuLoad.map(l => l.toFixed(2)).join(", ") %></li>
+<li>Disk Usage: <%= diskUsage %></li>
+</ul>
+
+<h2>Last 10 Posts</h2>
+<table>
+<tr><th>ID</th><th>Message</th><th>Time</th></tr>
+<% lastPosts.forEach(post => { %>
+<tr><td><%= post.id %></td><td><%= post.message %></td><td><%= post.time %></td></tr>
+<% }) %>
+</table>
+
+<h2>Node.js Logs (last 50 lines)</h2>
+<pre><%= nodeLogs %></pre>
+
+<h2>Python Logs (last 50 lines)</h2>
+<pre><%= pythonLogs %></pre>
+</body>
+</html>
+EOF
+
+echo "🎨 Professional Dashboard with GUI is ready! Open /dashboard route in your browser."
