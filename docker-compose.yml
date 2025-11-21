@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: minio-server
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio-storage:/data
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  node-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fb-autoshare-server
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - MINIO_ENDPOINT=minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - FB_PAGE_TOKEN=${FB_PAGE_TOKEN}
+      - FB_USER_TOKEN=${FB_USER_TOKEN}
+      - FB_USER_ID=${FB_USER_ID}
+      - RESTART_PASSWORD=${RESTART_PASSWORD}
+      - SESSION_SECRET=${SESSION_SECRET}
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./public:/app/public
+      - ./logs:/app/logs
+
+volumes:
+  minio-storage:
+    driver: local
+
+networks:
+  default:
+    name: app-network

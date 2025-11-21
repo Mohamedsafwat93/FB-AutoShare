@@ -1,0 +1,10 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.example
+public/temp-uploads
+logs
+.replit
+.DS_Store

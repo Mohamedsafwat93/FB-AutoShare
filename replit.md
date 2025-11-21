@@ -149,18 +149,66 @@ https://your-repl-url/
 - Implemented cache-control headers to prevent stale data
 - Optimized grid layout for responsive design
 
-## Next Steps / Future Enhancements
-- Facebook Graph API integration for automated posting
-- Post scheduling system
-- Media upload support (images/videos)
-- Analytics dashboard
-- Email/SMS notifications
-- User authentication system
-- Database persistence for historical data
-- Advanced network monitoring (bandwidth graphs)
+## MinIO Object Storage Integration
+- ✅ MinIO SDK installed and configured
+- ✅ Automatic bucket creation (facebook-posts, facebook-images, facebook-videos, backups)
+- ✅ Image optimization with Sharp (thumbnails + compressed versions)
+- ✅ Auto-backup system for all uploads
+- ✅ File listing, deletion, and statistics APIs
+- ✅ Docker Compose setup for local MinIO server
 
-## Deployment Status
+### MinIO API Endpoints
+```
+POST /api/minio/upload - Upload files with auto-compression
+GET /api/minio/files/:bucket - List bucket files
+GET /api/minio/stats/:bucket - Get storage statistics
+GET /api/minio/buckets - List all buckets
+DELETE /api/minio/files/:bucket/:filename - Delete file
+```
+
+### Running MinIO Server Locally
+```bash
+docker-compose up -d
+# MinIO Console: http://localhost:9001
+# MinIO API: http://localhost:9000
+```
+
+## System Features
+- ✅ 24/7 Server monitoring with hourly health checks
+- ✅ Auto-restart if server goes down
+- ✅ Keep-alive ping every 30 minutes (prevents sleep mode)
+- ✅ Daily file cleanup (removes files older than 24 hours)
+- ✅ Facebook automation with photo/video posting
+- ✅ WhatsApp integration (💬 Connect With Me button)
+- ✅ Modern 2025 dashboard with real-time stats
+- ✅ Service management and restart capabilities
+- ✅ MinIO cloud storage with auto-backup
+
+## Deployment Options
+
+### Option 1: Replit (Current)
+✅ Ready for Replit Publishing
+- 24/7 uptime with UptimeRobot
+- MinIO SDK available
+- Production-ready code
+
+### Option 2: Docker Compose (Recommended for MinIO)
+✅ Complete `docker-compose.yml` included
+- Runs MinIO + Node.js app together
+- Perfect for deployment on VPS/Cloud
+- Persistent storage volumes
+
+### Option 3: GitHub Deployment
 ✅ Ready for GitHub push to https://github.com/Mohamedsafwat93/FB-AutoShare
-✅ Ready for Replit Publishing (24/7 uptime with UptimeRobot)
-✅ Production-ready code
+- Dockerfile included
+- docker-compose.yml for easy setup
+- Production-ready configuration
+
+## Next Steps / Future Enhancements
+- Deploy to AWS/Railway/Digital Ocean with Docker
+- Advanced analytics dashboard
+- Email/SMS notifications for alerts
+- User authentication system with database
+- Advanced network monitoring graphs
+- Video processing and optimization
 
