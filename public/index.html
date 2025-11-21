@@ -355,22 +355,6 @@ function cleanupDisk() {
 }
 
 async function postToFacebook() {
-    const password = prompt("🔒 Enter password to post on IT-Solutions Page:");
-    
-    if(password === null) {
-        return; // User cancelled
-    }
-    
-    if(password === "") {
-        alert("❌ Password cannot be empty");
-        return;
-    }
-    
-    if(password !== "Nokta@1993") {
-        alert("❌ Invalid password - Access denied");
-        return;
-    }
-    
     const message = document.getElementById('fb-message').value.trim();
     const link = document.getElementById('fb-link').value.trim();
     const photoFile = document.getElementById('fb-photo').files[0];
@@ -414,22 +398,6 @@ async function postToFacebook() {
 }
 
 async function autoSyncGroups() {
-    const password = prompt("🔒 Enter password to sync Facebook groups:");
-    
-    if(password === null) {
-        return; // User cancelled
-    }
-    
-    if(password === "") {
-        alert("❌ Password cannot be empty");
-        return;
-    }
-    
-    if(password !== "Nokta@1993") {
-        alert("❌ Invalid password - Access denied");
-        return;
-    }
-    
     const statusEl = document.getElementById('groups-status');
     const selectEl = document.getElementById('groups-select');
     statusEl.innerHTML = '⏳ Syncing your Facebook groups...';
@@ -480,22 +448,6 @@ async function autoSyncGroups() {
 }
 
 function loadManualGroups() {
-    const password = prompt("🔒 Enter password to load group IDs:");
-    
-    if(password === null) {
-        return; // User cancelled
-    }
-    
-    if(password === "") {
-        alert("❌ Password cannot be empty");
-        return;
-    }
-    
-    if(password !== "Nokta@1993") {
-        alert("❌ Invalid password - Access denied");
-        return;
-    }
-    
     const idsText = document.getElementById('manual-group-ids').value.trim();
     const selectEl = document.getElementById('groups-select');
     const statusEl = document.getElementById('group-post-status');
@@ -526,22 +478,6 @@ function loadManualGroups() {
 }
 
 async function postToSelectedGroup() {
-    const password = prompt("🔒 Enter password to post to Facebook group:");
-    
-    if(password === null) {
-        return; // User cancelled
-    }
-    
-    if(password === "") {
-        alert("❌ Password cannot be empty");
-        return;
-    }
-    
-    if(password !== "Nokta@1993") {
-        alert("❌ Invalid password - Access denied");
-        return;
-    }
-    
     const selectEl = document.getElementById('groups-select');
     const groupId = selectEl.value;
     const message = document.getElementById('group-message').value.trim();
@@ -596,22 +532,6 @@ function toggleGroupsDropdown() {
 }
 
 async function validateTokens() {
-    const password = prompt("🔒 Enter password to check Facebook tokens:");
-    
-    if(password === null) {
-        return; // User cancelled
-    }
-    
-    if(password === "") {
-        alert("❌ Password cannot be empty");
-        return;
-    }
-    
-    if(password !== "Nokta@1993") {
-        alert("❌ Invalid password - Access denied");
-        return;
-    }
-    
     const statusEl = document.getElementById('token-status');
     statusEl.innerText = '⏳ Checking tokens...';
     
